@@ -4,7 +4,9 @@ from __future__ import annotations
 
 from typing import Literal, Optional
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+from app.schemas.review import normalize_evidence_quote
 
 
 class MaterialEventExtraction(BaseModel):
@@ -26,3 +28,13 @@ class MaterialEventExtraction(BaseModel):
     revenue_ratio_pct: Optional[float] = Field(None, ge=0.0)
     expected_impact: Literal["positive", "neutral", "negative", "unspecified"] = "unspecified"
     evidence_quote: str = Field(..., min_length=5, max_length=600)
+
+    @field_validator("counterparty", mode="before")
+    @classmethod
+    def _trim_counterparty(cls, v: object) -> object:
+        return v.strip()[:250] if isinstance(v, str) else v
+
+    @field_validator("evidence_quote", mode="before")
+    @classmethod
+    def _trim_quote(cls, v: object) -> object:
+        return normalize_evidence_quote(v)

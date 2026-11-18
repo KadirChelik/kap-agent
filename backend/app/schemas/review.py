@@ -53,6 +53,16 @@ def sanitize_user_text(raw: str, max_len: int) -> str:
     return collapsed[:max_len]
 
 
+def normalize_evidence_quote(value: object, max_len: int = 600) -> object:
+    """Trim verbose LLM quotes to schema bounds and provide a non-empty fallback."""
+    if not isinstance(value, str):
+        return value
+    cleaned = _MULTI_SPACE_RE.sub(" ", value).strip()
+    if len(cleaned) < 5:
+        return "KAP bildirim metni dayanağı."
+    return cleaned[:max_len]
+
+
 class ReviewFlagCreate(BaseModel):
     """Untrusted public payload to flag a low-confidence or inaccurate field."""
 

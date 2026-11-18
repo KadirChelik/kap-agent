@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
@@ -109,7 +110,7 @@ def _build_extraction_prompts(raw: RawDisclosure) -> tuple[str, str]:
         f"Tür: {raw.disclosure_type}\n"
         f"Tarih: {raw.published_at.isoformat()}\n"
         f"Başlık: {raw.title}\n\n"
-        f"Bildirim Metni:\n{raw.raw_text}"
+        f"Bildirim Metni:\n{raw.raw_text[:25000]}"
     )
     return system_prompt, user_prompt
 
@@ -161,7 +162,7 @@ def extract_single_disclosure(
         metadata=metadata,
         extracted=extracted,
         content_sha256=content_hash,
-        extractor_model=provider.model_name,
+        extractor_model=getattr(provider, "last_used_model", provider.model_name),
         extracted_at=datetime.now(timezone.utc),
     )
     cache_file.write_text(envelope.model_dump_json(indent=2), encoding="utf-8")
@@ -194,6 +195,8 @@ def extract_batch(
                 stats["cached"] += 1
             else:
                 stats["extracted"] += 1
+                if not getattr(active_provider, "is_offline_fallback", False):
+                    time.sleep(0.4)
         except Exception:
             stats["failed"] += 1
 

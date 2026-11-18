@@ -4,7 +4,9 @@ from __future__ import annotations
 
 from typing import Literal, Optional
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+
+from app.schemas.review import normalize_evidence_quote
 
 
 class DividendExtraction(BaseModel):
@@ -26,6 +28,11 @@ class DividendExtraction(BaseModel):
     ex_dividend_date: Optional[str] = Field(None, pattern=r"^\d{4}-\d{2}-\d{2}$")
     payment_date: Optional[str] = Field(None, pattern=r"^\d{4}-\d{2}-\d{2}$")
     evidence_quote: str = Field(..., min_length=5, max_length=600)
+
+    @field_validator("evidence_quote", mode="before")
+    @classmethod
+    def _trim_quote(cls, v: object) -> object:
+        return normalize_evidence_quote(v)
 
     @model_validator(mode="after")
     def validate_net_not_greater_than_gross(self) -> "DividendExtraction":

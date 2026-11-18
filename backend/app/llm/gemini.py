@@ -57,7 +57,7 @@ class GeminiFlashProvider(LLMProvider):
         self,
         *,
         api_key: str,
-        model_name: str = "gemini-2.5-flash",
+        model_name: str = "gemini-3-flash-preview",
         timeout_sec: float = 30.0,
         max_retries: int = 3,
         client: Optional[httpx.Client] = None,
@@ -66,6 +66,7 @@ class GeminiFlashProvider(LLMProvider):
             raise ValueError("GeminiFlashProvider requires a non-empty GEMINI_API_KEY.")
         self.api_key = api_key
         self.model_name = model_name
+        self.last_used_model = model_name
         self.timeout_sec = timeout_sec
         self.max_retries = max_retries
         self._client = client
@@ -78,10 +79,6 @@ class GeminiFlashProvider(LLMProvider):
         schema_cls: type[TModel],
     ) -> TModel:
         schema_json = json.dumps(schema_cls.model_json_schema(), ensure_ascii=False)
-        endpoint = (
-            f"https://generativelanguage.googleapis.com/v1beta/models/"
-            f"{self.model_name}:generateContent"
-        )
         payload: dict[str, Any] = {
             "systemInstruction": {
                 "parts": [
@@ -101,35 +98,60 @@ class GeminiFlashProvider(LLMProvider):
             },
         }
 
+        models_to_try = [self.model_name] + (
+            ["gemini-3.1-flash-lite-preview"]
+            if self.model_name != "gemini-3.1-flash-lite-preview"
+            else []
+        )
         last_err: Exception | None = None
         client = self._client or httpx.Client(timeout=self.timeout_sec)
         owns_client = self._client is None
         try:
-            for attempt in range(self.max_retries):
-                try:
-                    resp = client.post(endpoint, params={"key": self.api_key}, json=payload)
-                    if resp.status_code in (429, 500, 502, 503, 504):
-                        raise LLMProviderError(
-                            f"Transient Gemini HTTP {resp.status_code}: {resp.text[:200]}"
+            for m_idx, candidate_model in enumerate(models_to_try):
+                endpoint = (
+                    f"https://generativelanguage.googleapis.com/v1beta/models/"
+                    f"{candidate_model}:generateContent"
+                )
+                has_fallback = m_idx < len(models_to_try) - 1
+                for attempt in range(self.max_retries):
+                    try:
+                        resp = client.post(
+                            endpoint,
+                            headers={"x-goog-api-key": self.api_key},
+                            json=payload,
                         )
-                    resp.raise_for_status()
-                    data = resp.json()
-                    raw_text = (
-                        data.get("candidates", [{}])[0]
-                        .get("content", {})
-                        .get("parts", [{}])[0]
-                        .get("text", "")
-                    )
-                    if not raw_text:
-                        raise LLMProviderError("Empty text response from Gemini.")
-                    cleaned = _strip_code_fences(raw_text)
-                    return schema_cls.model_validate_json(cleaned)
-                except (httpx.HTTPError, LLMProviderError, ValidationError, KeyError, IndexError) as exc:
-                    last_err = exc
-                    if attempt < self.max_retries - 1:
-                        time.sleep(0.8 * (2**attempt))
-                        continue
-                    break
+                        if resp.status_code in (404, 429) and has_fallback:
+                            last_err = LLMProviderError(
+                                f"Model '{candidate_model}' HTTP {resp.status_code}; trying fallback."
+                            )
+                            break
+                        if resp.status_code in (429, 500, 502, 503, 504):
+                            raise LLMProviderError(
+                                f"Transient Gemini HTTP {resp.status_code}: {resp.text[:200]}"
+                            )
+                        resp.raise_for_status()
+                        data = resp.json()
+                        raw_text = (
+                            data.get("candidates", [{}])[0]
+                            .get("content", {})
+                            .get("parts", [{}])[0]
+                            .get("text", "")
+                        )
+                        if not raw_text:
+                            raise LLMProviderError("Empty text response from Gemini.")
+                        cleaned = _strip_code_fences(raw_text)
+                        decoded = json.loads(cleaned)
+                        if isinstance(decoded, list) and decoded and isinstance(decoded[0], dict):
+                            decoded = decoded[0]
+                        parsed = schema_cls.model_validate(decoded)
+                        self.last_used_model = candidate_model
+                        return parsed
+                    except (httpx.HTTPError, LLMProviderError, ValidationError, ValueError, KeyError, IndexError) as exc:
+                        last_err = exc
+                        if attempt < self.max_retries - 1:
+                            time.sleep(0.8 * (2**attempt))
+                            continue
+                        break
         finally:
             if owns_client:
                 client.close()

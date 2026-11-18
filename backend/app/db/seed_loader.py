@@ -21,9 +21,11 @@ def load_dataset_into_db(
     raw_dir: Path,
     extractions_dir: Path,
     db_path: Path,
+    reset: bool = False,
 ) -> dict[str, int]:
     """
     Validate all raw + extraction JSON pairs and upsert them into SQLite + FTS5.
+    When `reset=True`, clears existing tables before loading.
     Returns row counts loaded per table.
     """
     init_db(db_path)
@@ -38,6 +40,10 @@ def load_dataset_into_db(
     conn = get_write_conn(db_path)
     now_iso = datetime.now(timezone.utc).isoformat()
     try:
+        if reset:
+            for tbl in ("review_flags", "dividend_events", "financial_reports", "material_events", "disclosures"):
+                conn.execute(f"DELETE FROM {tbl}")
+            conn.commit()
         for raw_file in sorted(Path(raw_dir).glob("*.json")):
             raw = RawDisclosure.model_validate_json(raw_file.read_text(encoding="utf-8"))
             ext_file = Path(extractions_dir) / f"{raw.disclosure_id}.json"
@@ -186,6 +192,7 @@ def main(argv: Optional[list[str]] = None) -> int:
     parser = argparse.ArgumentParser(description="Load validated KAP extractions into SQLite + FTS5.")
     parser.add_argument("--dataset", choices=("sample", "full"), default="sample")
     parser.add_argument("--db-path", type=Path, default=settings.db_path)
+    parser.add_argument("--reset", action="store_true", help="Clear existing DB rows before loading.")
     args = parser.parse_args(argv)
 
     if args.dataset == "sample":
@@ -195,7 +202,12 @@ def main(argv: Optional[list[str]] = None) -> int:
         raw_dir = settings.raw_cache_dir
         ext_dir = settings.extractions_cache_dir
 
-    counts = load_dataset_into_db(raw_dir=raw_dir, extractions_dir=ext_dir, db_path=args.db_path)
+    counts = load_dataset_into_db(
+        raw_dir=raw_dir,
+        extractions_dir=ext_dir,
+        db_path=args.db_path,
+        reset=args.reset,
+    )
     print(json.dumps(counts, ensure_ascii=False))
     return 0
 

@@ -102,7 +102,7 @@ def get_settings() -> Settings:
         raw_cache_dir=REPO_ROOT / "data" / "raw",
         extractions_cache_dir=REPO_ROOT / "data" / "extractions",
         gemini_api_key=os.getenv("GEMINI_API_KEY", "").strip(),
-        gemini_model=os.getenv("GEMINI_MODEL", "gemini-2.5-flash").strip() or "gemini-2.5-flash",
+        gemini_model=os.getenv("GEMINI_MODEL", "gemini-3-flash-preview").strip() or "gemini-3-flash-preview",
         admin_token=os.getenv("ADMIN_TOKEN", "dev-admin-token").strip() or "dev-admin-token",
         kap_user_agent=os.getenv(
             "KAP_USER_AGENT",

@@ -93,7 +93,7 @@ class DisclosureEnvelope(BaseModel):
     metadata: DisclosureMetadata
     extracted: ExtractionPayload
     content_sha256: str = Field(..., min_length=16, max_length=64)
-    extractor_model: str = Field(default="gemini-2.5-flash", max_length=80)
+    extractor_model: str = Field(default="gemini-3-flash-preview", max_length=80)
     extracted_at: datetime
 
     @model_validator(mode="after")

@@ -9,6 +9,7 @@ from __future__ import annotations
 import argparse
 import json
 import random
+import re
 import shutil
 import time
 from datetime import date, datetime, timedelta, timezone
@@ -28,13 +29,29 @@ from app.schemas.base import DisclosureEnvelope, DisclosureType, RawDisclosure
 
 KAP_BASE_URL = "https://www.kap.org.tr"
 KAP_COMPANY_ITEMS_URL = f"{KAP_BASE_URL}/tr/api/company/items/BIST/A"
+KAP_BIST_COMPANIES_HTML_URL = f"{KAP_BASE_URL}/tr/bist-sirketler"
 KAP_MEMBERS_QUERY_URL = f"{KAP_BASE_URL}/tr/api/disclosure/members/byCriteria"
 KAP_DISCLOSURE_WEB_URL = f"{KAP_BASE_URL}/tr/Bildirim/{{disclosure_id}}"
 
 _TITLE_TYPE_HINTS: tuple[tuple[tuple[str, ...], DisclosureType], ...] = (
     (("kar payı", "temettü", "dividend"), "dividend"),
     (("finansal rapor", "finansal tablo", "bilanço", "faaliyet raporu"), "financial_report"),
-    (("özel durum", "yeni iş ilişkisi", "ihale", "yatırım", "payların geri"), "material_event"),
+    (
+        (
+            "özel durum",
+            "yeni iş ilişkisi",
+            "ihale",
+            "yatırım",
+            "payların geri",
+            "geleceğe yönelik",
+        ),
+        "material_event",
+    ),
+)
+
+_BIST_COMPANY_HTML_RE = re.compile(
+    r'"mkkMemberOid"\s*:\s*"([a-f0-9]+)"\s*,\s*"kapMemberTitle"\s*:\s*"([^"]+)"[^}]*?"stockCode"\s*:\s*"([A-Z0-9,\s]+)"',
+    re.I,
 )
 
 _EVAL_FIELDS_BY_TYPE: dict[DisclosureType, tuple[str, ...]] = {
@@ -64,23 +81,31 @@ _EVAL_FIELDS_BY_TYPE: dict[DisclosureType, tuple[str, ...]] = {
 }
 
 
-def classify_disclosure_title(title: str) -> Optional[DisclosureType]:
-    """Map a KAP disclosure title/subject into one of the three V1 types, or None if out-of-scope."""
+def classify_disclosure_title(
+    title: str, disclosure_type_code: str = ""
+) -> Optional[DisclosureType]:
+    """Map a KAP disclosure title/subject or code into one of the three V1 types."""
     lower = title.lower()
     for keywords, dtype in _TITLE_TYPE_HINTS:
         if any(kw in lower for kw in keywords):
             return dtype
+    if disclosure_type_code.strip().upper() == "FR":
+        return "financial_report"
     return None
 
 
 def parse_kap_html_text(html_body: str) -> str:
     """Extract clean normalized plain text from a KAP disclosure HTML page."""
     soup = BeautifulSoup(html_body, "html.parser")
-    for tag in soup(["script", "style", "noscript"]):
+    for tag in soup(["script", "style", "noscript", "nav", "header", "footer"]):
         tag.decompose()
     raw_lines = [line.strip() for line in soup.get_text("\n").splitlines()]
     non_empty = [line for line in raw_lines if len(line) > 1]
-    return "\n".join(non_empty)
+    joined = "\n".join(non_empty)
+    marker = "Merkezi Saklama ve Veri Depolama Kuruluşu"
+    if marker in joined:
+        joined = joined.split(marker, 1)[1].lstrip()
+    return joined
 
 
 def parse_kap_publish_datetime(raw_value: Optional[str]) -> datetime:
@@ -112,22 +137,51 @@ def is_allowed_v1_disclosure(ticker: str, disclosure_type: DisclosureType) -> bo
 
 def _resolve_ticker_oids(http: httpx.Client, headers: dict[str, str]) -> dict[str, dict[str, str]]:
     """Fetch KAP active company directory and index by uppercase stock ticker."""
-    resp = http.get(KAP_COMPANY_ITEMS_URL, headers=headers)
-    resp.raise_for_status()
-    rows = resp.json()
     mapping: dict[str, dict[str, str]] = {}
-    if not isinstance(rows, list):
+    try:
+        resp = http.get(KAP_COMPANY_ITEMS_URL, headers=headers)
+        resp.raise_for_status()
+        rows = resp.json()
+        if isinstance(rows, list):
+            for row in rows:
+                codes_raw = str(row.get("stockCodes") or "").upper()
+                oid = str(row.get("memberOid") or "").strip()
+                title = str(row.get("memberTitle") or "").strip()
+                if not oid or not codes_raw:
+                    continue
+                for code in (c.strip() for c in codes_raw.split(",")):
+                    if code:
+                        mapping[code] = {"oid": oid, "name": title or code}
+    except (httpx.HTTPError, ValueError):
+        pass
+
+    if mapping:
         return mapping
-    for row in rows:
-        codes_raw = str(row.get("stockCodes") or "").upper()
-        oid = str(row.get("memberOid") or "").strip()
-        title = str(row.get("memberTitle") or "").strip()
-        if not oid or not codes_raw:
-            continue
-        for code in (c.strip() for c in codes_raw.split(",")):
+
+    # Fallback: parse embedded directory JSON from /tr/bist-sirketler HTML
+    page_resp = http.get(KAP_BIST_COMPANIES_HTML_URL, headers=headers)
+    page_resp.raise_for_status()
+    unescaped = page_resp.text.replace('\\"', '"')
+    for oid, title, codes_raw in _BIST_COMPANY_HTML_RE.findall(unescaped):
+        for code in (c.strip().upper() for c in codes_raw.split(",")):
             if code:
-                mapping[code] = {"oid": oid, "name": title or code}
+                mapping[code] = {"oid": oid.strip(), "name": title.strip() or code}
     return mapping
+
+
+def _iter_date_windows(start_iso: str, end_iso: str, window_days: int = 85) -> list[tuple[str, str]]:
+    """Split [start_iso, end_iso] into newest-first <=85-day chunks (KAP byCriteria cap)."""
+    start_d = date.fromisoformat(start_iso)
+    end_d = date.fromisoformat(end_iso)
+    if end_d < start_d:
+        return [(start_iso, end_iso)]
+    windows: list[tuple[str, str]] = []
+    cur_end = end_d
+    while cur_end >= start_d:
+        cur_start = max(start_d, cur_end - timedelta(days=window_days - 1))
+        windows.append((cur_start.isoformat(), cur_end.isoformat()))
+        cur_end = cur_start - timedelta(days=1)
+    return windows
 
 
 def _build_by_criteria_payload(member_oid: str, start_date: str, end_date: str) -> dict[str, Any]:
@@ -199,6 +253,8 @@ def fetch_disclosures_cli(
             stats["errors"] += 1
             return stats
 
+        windows = _iter_date_windows(resolved_start, resolved_end, window_days=85)
+
         for ticker in tickers:
             norm_ticker = ticker.strip().upper()
             entry = ticker_directory.get(norm_ticker)
@@ -206,76 +262,94 @@ def fetch_disclosures_cli(
                 stats["errors"] += 1
                 continue
 
-            payload = _build_by_criteria_payload(entry["oid"], resolved_start, resolved_end)
-            try:
-                list_resp = http.post(KAP_MEMBERS_QUERY_URL, json=payload, headers=headers)
-                if list_resp.status_code == 429:
-                    time.sleep(max(delay_sec, 3.0) * 2)
-                    list_resp = http.post(KAP_MEMBERS_QUERY_URL, json=payload, headers=headers)
-                list_resp.raise_for_status()
-                items = list_resp.json()
-                if isinstance(items, dict):
-                    items = items.get("data") or items.get("list") or []
-                if not isinstance(items, list):
-                    continue
-            except (httpx.HTTPError, ValueError):
-                stats["errors"] += 1
-                continue
+            seen_disc_ids: set[str] = set()
+            processed_for_ticker = 0
 
-            for item in items[:limit_per_ticker]:
-                disc_id = str(item.get("disclosureIndex", "")).strip()
-                subject = str(item.get("subject") or item.get("disclosureTitle") or item.get("title") or "").strip()
-                summary_hint = str(item.get("summary") or "").strip()
-                title = subject or summary_hint
-                if not disc_id or not title:
-                    continue
+            for win_start, win_end in windows:
+                if processed_for_ticker >= limit_per_ticker:
+                    break
 
-                dtype = classify_disclosure_title(f"{subject} {summary_hint}")
-                if dtype is None or not is_allowed_v1_disclosure(norm_ticker, dtype):
-                    stats["skipped_bank_or_scope"] += 1
-                    continue
-
-                cache_path = output_dir / f"{disc_id}.json"
-                if cache_path.exists() and not force:
-                    stats["cached"] += 1
-                    continue
-
-                if delay_sec > 0:
-                    time.sleep(delay_sec + random.uniform(0.1, 0.6))
-
-                source_url = KAP_DISCLOSURE_WEB_URL.format(disclosure_id=disc_id)
+                payload = _build_by_criteria_payload(entry["oid"], win_start, win_end)
                 try:
-                    page_resp = http.get(source_url, headers=headers)
-                    if page_resp.status_code == 429:
+                    list_resp = http.post(KAP_MEMBERS_QUERY_URL, json=payload, headers=headers)
+                    if list_resp.status_code == 429:
                         time.sleep(max(delay_sec, 3.0) * 2)
-                        page_resp = http.get(source_url, headers=headers)
-                    page_resp.raise_for_status()
-                    plain_text = parse_kap_html_text(page_resp.text)
-                    if len(plain_text) < 20 and summary_hint:
-                        plain_text = f"{title}\n{summary_hint}"
-
-                    published_dt = parse_kap_publish_datetime(str(item.get("publishDate") or ""))
-                    company_name = str(
-                        item.get("memberTitle")
-                        or entry.get("name")
-                        or TICKER_COMPANY_NAMES.get(norm_ticker, norm_ticker)
-                    )
-                    record = RawDisclosure(
-                        disclosure_id=disc_id,
-                        ticker=norm_ticker,
-                        company_name=company_name,
-                        disclosure_type=dtype,
-                        published_at=published_dt,
-                        source_url=source_url,
-                        title=title[:400],
-                        raw_text=plain_text,
-                        fetched_at=datetime.now(timezone.utc),
-                        source="kap_live",
-                    )
-                    cache_path.write_text(record.model_dump_json(indent=2), encoding="utf-8")
-                    stats["fetched"] += 1
-                except Exception:
+                        list_resp = http.post(KAP_MEMBERS_QUERY_URL, json=payload, headers=headers)
+                    list_resp.raise_for_status()
+                    items = list_resp.json()
+                    if isinstance(items, dict):
+                        items = items.get("data") or items.get("list") or []
+                    if not isinstance(items, list):
+                        continue
+                except (httpx.HTTPError, ValueError):
                     stats["errors"] += 1
+                    continue
+
+                for item in items:
+                    if processed_for_ticker >= limit_per_ticker:
+                        break
+
+                    disc_id = str(item.get("disclosureIndex", "")).strip()
+                    if not disc_id or disc_id in seen_disc_ids:
+                        continue
+                    seen_disc_ids.add(disc_id)
+
+                    subject = str(
+                        item.get("subject") or item.get("disclosureTitle") or item.get("title") or ""
+                    ).strip()
+                    summary_hint = str(item.get("summary") or "").strip()
+                    disc_type_code = str(item.get("disclosureType") or "").strip()
+                    title = subject or summary_hint
+                    if not title:
+                        continue
+
+                    dtype = classify_disclosure_title(f"{subject} {summary_hint}", disc_type_code)
+                    if dtype is None or not is_allowed_v1_disclosure(norm_ticker, dtype):
+                        stats["skipped_bank_or_scope"] += 1
+                        continue
+
+                    processed_for_ticker += 1
+                    cache_path = output_dir / f"{disc_id}.json"
+                    if cache_path.exists() and not force:
+                        stats["cached"] += 1
+                        continue
+
+                    if delay_sec > 0:
+                        time.sleep(delay_sec + random.uniform(0.1, 0.6))
+
+                    source_url = KAP_DISCLOSURE_WEB_URL.format(disclosure_id=disc_id)
+                    try:
+                        page_resp = http.get(source_url, headers=headers)
+                        if page_resp.status_code == 429:
+                            time.sleep(max(delay_sec, 3.0) * 2)
+                            page_resp = http.get(source_url, headers=headers)
+                        page_resp.raise_for_status()
+                        plain_text = parse_kap_html_text(page_resp.text)
+                        if len(plain_text) < 20 and summary_hint:
+                            plain_text = f"{title}\n{summary_hint}"
+
+                        published_dt = parse_kap_publish_datetime(str(item.get("publishDate") or ""))
+                        company_name = str(
+                            item.get("memberTitle")
+                            or entry.get("name")
+                            or TICKER_COMPANY_NAMES.get(norm_ticker, norm_ticker)
+                        )
+                        record = RawDisclosure(
+                            disclosure_id=disc_id,
+                            ticker=norm_ticker,
+                            company_name=company_name,
+                            disclosure_type=dtype,
+                            published_at=published_dt,
+                            source_url=source_url,
+                            title=title[:400],
+                            raw_text=plain_text,
+                            fetched_at=datetime.now(timezone.utc),
+                            source="kap_live",
+                        )
+                        cache_path.write_text(record.model_dump_json(indent=2), encoding="utf-8")
+                        stats["fetched"] += 1
+                    except Exception:
+                        stats["errors"] += 1
     finally:
         if owns_client:
             http.close()
