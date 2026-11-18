@@ -1,0 +1,33 @@
+{
+  "metadata": {
+    "disclosure_id": "1402008",
+    "ticker": "ARCLK",
+    "company_name": "Arçelik A.Ş.",
+    "disclosure_type": "financial_report",
+    "published_at": "2026-04-30T18:45:00+03:00",
+    "source_url": "https://www.kap.org.tr/tr/Bildirim/1402008",
+    "title": "2026/03 Finansal Rapor (TMS/TFRS Konsolide)",
+    "summary_tr": "ARCLK 2026/03 finansal rapor: Hasılat 112,400 Mn TL, Net Kâr -1,250 Mn TL.",
+    "extraction_confidence": 0.94,
+    "low_confidence_fields": [],
+    "human_verified": false
+  },
+  "extracted": {
+    "period": "2026/03",
+    "consolidation": "consolidated",
+    "currency": "TRY",
+    "presentation_scale": "millions",
+    "revenue_try": 112400000000.0,
+    "gross_profit_try": 29800000000.0,
+    "ebitda_try": 6900000000.0,
+    "operating_profit_try": 2100000000.0,
+    "net_profit_try": -1250000000.0,
+    "total_assets_try": 418000000000.0,
+    "total_equity_try": 102000000000.0,
+    "net_debt_try": 96400000000.0,
+    "evidence_quote": "Arçelik A.Ş. 2026/03 dönemi konsolide finansal tablolarına göre (Milyon TL): Hasılat 112,400.0 Milyon TL, Brüt Kâr 29,800.0 Milyon TL, FAVÖK 6,900.0 Milyon TL, Esas Faaliyet Kârı 2,100.0 Milyon TL, Net Dönem Kârı -1,250.0 Milyon TL'dir. Toplam Varlıklar 418,000.0 Milyon TL, Özkaynaklar 102,000.0 Milyon TL, Net borç 96,400.0 Milyon TL."
+  },
+  "content_sha256": "8d2356568e247a268cd0f5bcdf598e50e7a19f938b1fa012b2632b86f14898ea",
+  "extractor_model": "OFFLINE/SAHTE (Sentetik Ornek Veri)",
+  "extracted_at": "2026-11-18T01:41:21.020959Z"
+}

@@ -1,0 +1,30 @@
+{
+  "metadata": {
+    "disclosure_id": "1403006",
+    "ticker": "TTKOM",
+    "company_name": "Türk Telekomünikasyon A.Ş.",
+    "disclosure_type": "material_event",
+    "published_at": "2026-06-11T17:55:00+03:00",
+    "source_url": "https://www.kap.org.tr/tr/Bildirim/1403006",
+    "title": "Kamu Fiber Altyapı Genişleme İhalesi Kazanımı",
+    "summary_tr": "TTKOM (new_business_contract): Kamu Fiber Altyapı Genişleme İhalesi Kazanımı",
+    "extraction_confidence": 0.76,
+    "low_confidence_fields": [
+      "revenue_ratio_pct"
+    ],
+    "human_verified": false
+  },
+  "extracted": {
+    "event_category": "new_business_contract",
+    "counterparty": "Kamu Altyapı Genişleme Konsorsiyumu",
+    "contract_amount_original": 3200000000.0,
+    "contract_currency": "TRY",
+    "contract_amount_try_equiv": 3200000000.0,
+    "revenue_ratio_pct": null,
+    "expected_impact": "positive",
+    "evidence_quote": "Türk Telekomünikasyon A.Ş. (TTKOM) tarafından yapılan özel durum açıklaması: Kamu Fiber Altyapı Genişleme İhalesi Kazanımı. Karşı taraf: Kamu Altyapı Genişleme Konsorsiyumu. Sözleşme/yatırım bedeli 3,200,000,000 TRY (yaklaşık 3,200,000,000 TRY) tutarındadır."
+  },
+  "content_sha256": "e95fd17d432a6cf9a94322875c86362726387ead835816529882005df53ddaf2",
+  "extractor_model": "OFFLINE/SAHTE (Sentetik Ornek Veri)",
+  "extracted_at": "2026-11-18T01:41:21.025037Z"
+}

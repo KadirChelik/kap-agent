@@ -1,0 +1,33 @@
+{
+  "metadata": {
+    "disclosure_id": "1402006",
+    "ticker": "BIMAS",
+    "company_name": "BİM Birleşik Mağazalar A.Ş.",
+    "disclosure_type": "financial_report",
+    "published_at": "2026-03-11T18:35:00+03:00",
+    "source_url": "https://www.kap.org.tr/tr/Bildirim/1402006",
+    "title": "2025/12 Finansal Rapor (TMS/TFRS Konsolide)",
+    "summary_tr": "BIMAS 2025/12 finansal rapor: Hasılat 534,000 Mn TL, Net Kâr 22,400 Mn TL.",
+    "extraction_confidence": 0.95,
+    "low_confidence_fields": [],
+    "human_verified": false
+  },
+  "extracted": {
+    "period": "2025/12",
+    "consolidation": "consolidated",
+    "currency": "TRY",
+    "presentation_scale": "millions",
+    "revenue_try": 534000000000.0,
+    "gross_profit_try": 98600000000.0,
+    "ebitda_try": 41200000000.0,
+    "operating_profit_try": 27400000000.0,
+    "net_profit_try": 22400000000.0,
+    "total_assets_try": 245000000000.0,
+    "total_equity_try": 118000000000.0,
+    "net_debt_try": 9500000000.0,
+    "evidence_quote": "BİM Birleşik Mağazalar A.Ş. 2025/12 dönemi konsolide finansal tablolarına göre (Milyon TL): Hasılat 534,000.0 Milyon TL, Brüt Kâr 98,600.0 Milyon TL, FAVÖK 41,200.0 Milyon TL, Esas Faaliyet Kârı 27,400.0 Milyon TL, Net Dönem Kârı 22,400.0 Milyon TL'dir. Toplam Varlıklar 245,000.0 Milyon TL, Özkaynaklar 118,000.0 Milyon TL, Net borç 9,500.0 Milyon TL."
+  },
+  "content_sha256": "1a5c8a6eb82357741e656192babfc4e7d8da7dbf6cbc7da8ee473411eea53d10",
+  "extractor_model": "OFFLINE/SAHTE (Sentetik Ornek Veri)",
+  "extracted_at": "2026-11-18T01:41:21.019376Z"
+}

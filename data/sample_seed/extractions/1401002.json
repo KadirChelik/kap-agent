@@ -1,0 +1,30 @@
+{
+  "metadata": {
+    "disclosure_id": "1401002",
+    "ticker": "FROTO",
+    "company_name": "Ford Otomotiv Sanayi A.Ş.",
+    "disclosure_type": "dividend",
+    "published_at": "2026-03-30T17:45:00+03:00",
+    "source_url": "https://www.kap.org.tr/tr/Bildirim/1401002",
+    "title": "Kar Payı Dağıtım İşlemlerine İlişkin Bildirim",
+    "summary_tr": "FROTO 2025 yılı kar payı (approved): brüt 43.50 TL, net 39.15 TL.",
+    "extraction_confidence": 0.97,
+    "low_confidence_fields": [],
+    "human_verified": false
+  },
+  "extracted": {
+    "decision_status": "approved",
+    "fiscal_year": 2025,
+    "gross_cash_per_share_try": 43.5,
+    "net_cash_per_share_try": 39.15,
+    "total_gross_cash_dividend_try": 15264585000.0,
+    "bonus_share_rate_pct": null,
+    "payment_type": "single",
+    "ex_dividend_date": "2026-04-10",
+    "payment_date": "2026-04-14",
+    "evidence_quote": "Ford Otomotiv Sanayi A.Ş. 2025 yılı hesap dönemi kârından 1 TL nominal değerli paya brüt 43,50 TL, net 39,15 TL nakit kar payının tek seferde peşin ödeme şeklinde dağıtılması Genel Kurulda onaylanmıştır. Nakit kar payı hak kullanım tarihi 2026-04-10, ödeme tarihi 2026-04-14 olarak belirlenmiştir."
+  },
+  "content_sha256": "d7c55d1616de4b149c0ff6979ae5edeabea9c27b35368d99d761efe20440870a",
+  "extractor_model": "OFFLINE/SAHTE (Sentetik Ornek Veri)",
+  "extracted_at": "2026-11-18T01:41:21.007521Z"
+}

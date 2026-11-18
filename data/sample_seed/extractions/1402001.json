@@ -1,0 +1,33 @@
+{
+  "metadata": {
+    "disclosure_id": "1402001",
+    "ticker": "THYAO",
+    "company_name": "Türk Hava Yolları A.O.",
+    "disclosure_type": "financial_report",
+    "published_at": "2026-02-28T18:25:00+03:00",
+    "source_url": "https://www.kap.org.tr/tr/Bildirim/1402001",
+    "title": "2025/12 Finansal Rapor (TMS/TFRS Konsolide)",
+    "summary_tr": "THYAO 2025/12 finansal rapor: Hasılat 745,200 Mn TL, Net Kâr 112,600 Mn TL.",
+    "extraction_confidence": 0.97,
+    "low_confidence_fields": [],
+    "human_verified": false
+  },
+  "extracted": {
+    "period": "2025/12",
+    "consolidation": "consolidated",
+    "currency": "TRY",
+    "presentation_scale": "millions",
+    "revenue_try": 745200000000.0,
+    "gross_profit_try": 178900000000.0,
+    "ebitda_try": 158400000000.0,
+    "operating_profit_try": 108500000000.0,
+    "net_profit_try": 112600000000.0,
+    "total_assets_try": 1320000000000.0,
+    "total_equity_try": 598000000000.0,
+    "net_debt_try": 265000000000.0,
+    "evidence_quote": "Türk Hava Yolları A.O. 2025/12 dönemi konsolide finansal tablolarına göre (Milyon TL): Hasılat 745,200.0 Milyon TL, Brüt Kâr 178,900.0 Milyon TL, FAVÖK 158,400.0 Milyon TL, Esas Faaliyet Kârı 108,500.0 Milyon TL, Net Dönem Kârı 112,600.0 Milyon TL'dir. Toplam Varlıklar 1,320,000.0 Milyon TL, Özkaynaklar 598,000.0 Milyon TL, Net borç 265,000.0 Milyon TL."
+  },
+  "content_sha256": "a1650f33bed864aa69ffc6f0566b4132a21cea0548ef1d9a831b76ca6cebde2c",
+  "extractor_model": "OFFLINE/SAHTE (Sentetik Ornek Veri)",
+  "extracted_at": "2026-11-18T01:41:21.014802Z"
+}

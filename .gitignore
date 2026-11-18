@@ -1,0 +1,37 @@
+# Gitignore for KAP Agent
+.env
+.env.*
+!.env.example
+
+# Full crawled KAP cache & local compiled SQLite DB
+data/raw/
+data/extractions/
+data/*.db
+data/*.db-wal
+data/*.db-shm
+data/*.db-journal
+
+# Keep curated small sample seed tracked
+!data/sample_seed/
+!data/sample_seed/**
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.venv/
+venv/
+*.egg-info/
+
+# Frontend / Node
+node_modules/
+frontend/dist/
+frontend/.vite/
+coverage/
+
+# OS / Editor
+.DS_Store
+Thumbs.db

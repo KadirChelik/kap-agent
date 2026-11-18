@@ -1,0 +1,28 @@
+{
+  "metadata": {
+    "disclosure_id": "1403001",
+    "ticker": "ASELS",
+    "company_name": "Aselsan Elektronik Sanayi ve Ticaret A.Ş.",
+    "disclosure_type": "material_event",
+    "published_at": "2026-05-12T09:15:00+03:00",
+    "source_url": "https://www.kap.org.tr/tr/Bildirim/1403001",
+    "title": "Radar ve Elektronik Harp Sistemi Sözleşmesi İmzalanması Hk.",
+    "summary_tr": "ASELS (new_business_contract): Radar ve Elektronik Harp Sistemi Sözleşmesi İmzalanması Hk.",
+    "extraction_confidence": 0.97,
+    "low_confidence_fields": [],
+    "human_verified": false
+  },
+  "extracted": {
+    "event_category": "new_business_contract",
+    "counterparty": "T.C. Savunma Sanayii Başkanlığı",
+    "contract_amount_original": 185000000.0,
+    "contract_currency": "USD",
+    "contract_amount_try_equiv": 6660000000.0,
+    "revenue_ratio_pct": 5.34,
+    "expected_impact": "positive",
+    "evidence_quote": "Aselsan Elektronik Sanayi ve Ticaret A.Ş. (ASELS) tarafından yapılan özel durum açıklaması: Radar ve Elektronik Harp Sistemi Sözleşmesi İmzalanması Hk.. Karşı taraf: T.C. Savunma Sanayii Başkanlığı. Sözleşme/yatırım bedeli 185,000,000 USD (yaklaşık 6,660,000,000 TRY) tutarındadır. Bedelin son yıllık hasılata oranı %5.34 düzeyindedir."
+  },
+  "content_sha256": "b3bb07a5269e28fc03150f5fdfe345e10525543d74a9d22098e39239f166a113",
+  "extractor_model": "OFFLINE/SAHTE (Sentetik Ornek Veri)",
+  "extracted_at": "2026-11-18T01:41:21.020959Z"
+}

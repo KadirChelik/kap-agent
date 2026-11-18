@@ -1,0 +1,28 @@
+{
+  "metadata": {
+    "disclosure_id": "1403005",
+    "ticker": "MGROS",
+    "company_name": "Migros Ticaret A.Ş.",
+    "disclosure_type": "material_event",
+    "published_at": "2026-05-08T18:20:00+03:00",
+    "source_url": "https://www.kap.org.tr/tr/Bildirim/1403005",
+    "title": "2026 Yılı Satış Büyümesi ve FAVÖK Marjı Beklentilerinin Güncellenmesi",
+    "summary_tr": "MGROS (guidance_revision): 2026 Yılı Satış Büyümesi ve FAVÖK Marjı Beklentilerinin Güncellenmesi",
+    "extraction_confidence": 0.91,
+    "low_confidence_fields": [],
+    "human_verified": false
+  },
+  "extracted": {
+    "event_category": "guidance_revision",
+    "counterparty": null,
+    "contract_amount_original": null,
+    "contract_currency": null,
+    "contract_amount_try_equiv": null,
+    "revenue_ratio_pct": null,
+    "expected_impact": "positive",
+    "evidence_quote": "Migros Ticaret A.Ş. (MGROS) tarafından yapılan özel durum açıklaması: 2026 Yılı Satış Büyümesi ve FAVÖK Marjı Beklentilerinin Güncellenmesi. Finansal beklenti aralığı yukarı yönlü revize edilmiştir."
+  },
+  "content_sha256": "1359f5d640cc719507f0f3d970756f8afe82050de7d824d6dde05fe79625212c",
+  "extractor_model": "OFFLINE/SAHTE (Sentetik Ornek Veri)",
+  "extracted_at": "2026-11-18T01:41:21.025037Z"
+}

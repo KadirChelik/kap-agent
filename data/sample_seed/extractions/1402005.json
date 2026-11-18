@@ -1,0 +1,33 @@
+{
+  "metadata": {
+    "disclosure_id": "1402005",
+    "ticker": "FROTO",
+    "company_name": "Ford Otomotiv Sanayi A.Ş.",
+    "disclosure_type": "financial_report",
+    "published_at": "2026-03-03T18:15:00+03:00",
+    "source_url": "https://www.kap.org.tr/tr/Bildirim/1402005",
+    "title": "2025/12 Finansal Rapor (TMS/TFRS Konsolide)",
+    "summary_tr": "FROTO 2025/12 finansal rapor: Hasılat 612,000 Mn TL, Net Kâr 46,800 Mn TL.",
+    "extraction_confidence": 0.95,
+    "low_confidence_fields": [],
+    "human_verified": false
+  },
+  "extracted": {
+    "period": "2025/12",
+    "consolidation": "consolidated",
+    "currency": "TRY",
+    "presentation_scale": "millions",
+    "revenue_try": 612000000000.0,
+    "gross_profit_try": 82400000000.0,
+    "ebitda_try": 58900000000.0,
+    "operating_profit_try": 49200000000.0,
+    "net_profit_try": 46800000000.0,
+    "total_assets_try": 368000000000.0,
+    "total_equity_try": 134000000000.0,
+    "net_debt_try": 82500000000.0,
+    "evidence_quote": "Ford Otomotiv Sanayi A.Ş. 2025/12 dönemi konsolide finansal tablolarına göre (Milyon TL): Hasılat 612,000.0 Milyon TL, Brüt Kâr 82,400.0 Milyon TL, FAVÖK 58,900.0 Milyon TL, Esas Faaliyet Kârı 49,200.0 Milyon TL, Net Dönem Kârı 46,800.0 Milyon TL'dir. Toplam Varlıklar 368,000.0 Milyon TL, Özkaynaklar 134,000.0 Milyon TL, Net borç 82,500.0 Milyon TL."
+  },
+  "content_sha256": "2307dd53950a1849071b54aacb7e27c74e17aa4532eef668ce80e9140c47dd8b",
+  "extractor_model": "OFFLINE/SAHTE (Sentetik Ornek Veri)",
+  "extracted_at": "2026-11-18T01:41:21.018315Z"
+}

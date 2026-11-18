@@ -1,0 +1,33 @@
+{
+  "metadata": {
+    "disclosure_id": "1402004",
+    "ticker": "ASELS",
+    "company_name": "Aselsan Elektronik Sanayi ve Ticaret A.Ş.",
+    "disclosure_type": "financial_report",
+    "published_at": "2026-02-27T18:10:00+03:00",
+    "source_url": "https://www.kap.org.tr/tr/Bildirim/1402004",
+    "title": "2025/12 Finansal Rapor (TMS/TFRS Konsolide)",
+    "summary_tr": "ASELS 2025/12 finansal rapor: Hasılat 124,800 Mn TL, Net Kâr 18,900 Mn TL.",
+    "extraction_confidence": 0.96,
+    "low_confidence_fields": [],
+    "human_verified": false
+  },
+  "extracted": {
+    "period": "2025/12",
+    "consolidation": "consolidated",
+    "currency": "TRY",
+    "presentation_scale": "millions",
+    "revenue_try": 124800000000.0,
+    "gross_profit_try": 41200000000.0,
+    "ebitda_try": 31200000000.0,
+    "operating_profit_try": 25600000000.0,
+    "net_profit_try": 18900000000.0,
+    "total_assets_try": 248000000000.0,
+    "total_equity_try": 142000000000.0,
+    "net_debt_try": 18400000000.0,
+    "evidence_quote": "Aselsan Elektronik Sanayi ve Ticaret A.Ş. 2025/12 dönemi konsolide finansal tablolarına göre (Milyon TL): Hasılat 124,800.0 Milyon TL, Brüt Kâr 41,200.0 Milyon TL, FAVÖK 31,200.0 Milyon TL, Esas Faaliyet Kârı 25,600.0 Milyon TL, Net Dönem Kârı 18,900.0 Milyon TL'dir. Toplam Varlıklar 248,000.0 Milyon TL, Özkaynaklar 142,000.0 Milyon TL, Net borç 18,400.0 Milyon TL."
+  },
+  "content_sha256": "833cad2a43fc214e933e1082daa23cdc0e67b4ab72c7dae48e78e296bff4d76b",
+  "extractor_model": "OFFLINE/SAHTE (Sentetik Ornek Veri)",
+  "extracted_at": "2026-11-18T01:41:21.017803Z"
+}

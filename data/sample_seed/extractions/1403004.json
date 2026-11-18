@@ -1,0 +1,28 @@
+{
+  "metadata": {
+    "disclosure_id": "1403004",
+    "ticker": "TCELL",
+    "company_name": "Turkcell İletişim Hizmetleri A.Ş.",
+    "disclosure_type": "material_event",
+    "published_at": "2026-06-03T18:10:00+03:00",
+    "source_url": "https://www.kap.org.tr/tr/Bildirim/1403004",
+    "title": "Yeni Veri Merkezi ve Fiber Şebeke Kapasite Artışı",
+    "summary_tr": "TCELL (investment_capex): Yeni Veri Merkezi ve Fiber Şebeke Kapasite Artışı",
+    "extraction_confidence": 0.93,
+    "low_confidence_fields": [],
+    "human_verified": false
+  },
+  "extracted": {
+    "event_category": "investment_capex",
+    "counterparty": "Yurt İçi Altyapı Yatırım Programı",
+    "contract_amount_original": 8500000000.0,
+    "contract_currency": "TRY",
+    "contract_amount_try_equiv": 8500000000.0,
+    "revenue_ratio_pct": null,
+    "expected_impact": "positive",
+    "evidence_quote": "Turkcell İletişim Hizmetleri A.Ş. (TCELL) tarafından yapılan özel durum açıklaması: Yeni Veri Merkezi ve Fiber Şebeke Kapasite Artışı. Karşı taraf: Yurt İçi Altyapı Yatırım Programı. Sözleşme/yatırım bedeli 8,500,000,000 TRY (yaklaşık 8,500,000,000 TRY) tutarındadır."
+  },
+  "content_sha256": "d54e7edb6f57a41959b9e7fbcc40836f40031c2319d6d18094b380d7af3e81c6",
+  "extractor_model": "OFFLINE/SAHTE (Sentetik Ornek Veri)",
+  "extracted_at": "2026-11-18T01:41:21.024067Z"
+}

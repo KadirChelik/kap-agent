@@ -1,0 +1,30 @@
+{
+  "metadata": {
+    "disclosure_id": "1401001",
+    "ticker": "TUPRS",
+    "company_name": "Tüpraş - Türkiye Petrol Rafinerileri A.Ş.",
+    "disclosure_type": "dividend",
+    "published_at": "2026-03-27T18:10:00+03:00",
+    "source_url": "https://www.kap.org.tr/tr/Bildirim/1401001",
+    "title": "Kar Payı Dağıtım İşlemlerine İlişkin Bildirim",
+    "summary_tr": "TUPRS 2025 yılı kar payı (approved): brüt 15.20 TL, net 13.68 TL.",
+    "extraction_confidence": 0.98,
+    "low_confidence_fields": [],
+    "human_verified": false
+  },
+  "extracted": {
+    "decision_status": "approved",
+    "fiscal_year": 2025,
+    "gross_cash_per_share_try": 15.2,
+    "net_cash_per_share_try": 13.68,
+    "total_gross_cash_dividend_try": 29287100000.0,
+    "bonus_share_rate_pct": null,
+    "payment_type": "single",
+    "ex_dividend_date": "2026-04-03",
+    "payment_date": "2026-04-07",
+    "evidence_quote": "Tüpraş - Türkiye Petrol Rafinerileri A.Ş. 2025 yılı hesap dönemi kârından 1 TL nominal değerli paya brüt 15,20 TL, net 13,68 TL nakit kar payının tek seferde peşin ödeme şeklinde dağıtılması Genel Kurulda onaylanmıştır. Nakit kar payı hak kullanım tarihi 2026-04-03, ödeme tarihi 2026-04-07 olarak belirlenmiştir."
+  },
+  "content_sha256": "503b16df3c8040265bc3670ee28a1ab50fde3eae0a06d637ba7d0ee92fbbef21",
+  "extractor_model": "OFFLINE/SAHTE (Sentetik Ornek Veri)",
+  "extracted_at": "2026-11-18T01:41:21.006549Z"
+}

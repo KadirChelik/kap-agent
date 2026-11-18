@@ -1,0 +1,30 @@
+{
+  "metadata": {
+    "disclosure_id": "1401006",
+    "ticker": "THYAO",
+    "company_name": "Türk Hava Yolları A.O.",
+    "disclosure_type": "dividend",
+    "published_at": "2026-03-19T18:15:00+03:00",
+    "source_url": "https://www.kap.org.tr/tr/Bildirim/1401006",
+    "title": "Kar Payı Dağıtım İşlemlerine İlişkin Bildirim",
+    "summary_tr": "THYAO 2025 yılı kar payı (no_dividend): brüt 0.00 TL, net 0.00 TL.",
+    "extraction_confidence": 0.96,
+    "low_confidence_fields": [],
+    "human_verified": false
+  },
+  "extracted": {
+    "decision_status": "no_dividend",
+    "fiscal_year": 2025,
+    "gross_cash_per_share_try": 0.0,
+    "net_cash_per_share_try": 0.0,
+    "total_gross_cash_dividend_try": 0.0,
+    "bonus_share_rate_pct": null,
+    "payment_type": "none",
+    "ex_dividend_date": null,
+    "payment_date": null,
+    "evidence_quote": "Türk Hava Yolları A.O. Yönetim Kurulu tarafından 2025 yılı hesap dönemi karının şirket bünyesinde tutulması amacıyla nakit kar payı dağıtılmamasına karar verilmiştir."
+  },
+  "content_sha256": "d090e5ee2b31418ab3b381e06f9699a16b9ff727cc9f370f873167c988c5f6d6",
+  "extractor_model": "OFFLINE/SAHTE (Sentetik Ornek Veri)",
+  "extracted_at": "2026-11-18T01:41:21.011804Z"
+}

@@ -1,0 +1,33 @@
+{
+  "metadata": {
+    "disclosure_id": "1402003",
+    "ticker": "TUPRS",
+    "company_name": "Tüpraş - Türkiye Petrol Rafinerileri A.Ş.",
+    "disclosure_type": "financial_report",
+    "published_at": "2026-02-25T18:30:00+03:00",
+    "source_url": "https://www.kap.org.tr/tr/Bildirim/1402003",
+    "title": "2025/12 Finansal Rapor (TMS/TFRS Konsolide)",
+    "summary_tr": "TUPRS 2025/12 finansal rapor: Hasılat 892,000 Mn TL, Net Kâr 42,500 Mn TL.",
+    "extraction_confidence": 0.97,
+    "low_confidence_fields": [],
+    "human_verified": false
+  },
+  "extracted": {
+    "period": "2025/12",
+    "consolidation": "consolidated",
+    "currency": "TRY",
+    "presentation_scale": "millions",
+    "revenue_try": 892000000000.0,
+    "gross_profit_try": 94500000000.0,
+    "ebitda_try": 68200000000.0,
+    "operating_profit_try": 54100000000.0,
+    "net_profit_try": 42500000000.0,
+    "total_assets_try": 512000000000.0,
+    "total_equity_try": 286000000000.0,
+    "net_debt_try": -32000000000.0,
+    "evidence_quote": "Tüpraş - Türkiye Petrol Rafinerileri A.Ş. 2025/12 dönemi konsolide finansal tablolarına göre (Milyon TL): Hasılat 892,000.0 Milyon TL, Brüt Kâr 94,500.0 Milyon TL, FAVÖK 68,200.0 Milyon TL, Esas Faaliyet Kârı 54,100.0 Milyon TL, Net Dönem Kârı 42,500.0 Milyon TL'dir. Toplam Varlıklar 512,000.0 Milyon TL, Özkaynaklar 286,000.0 Milyon TL, Net borç -32,000.0 Milyon TL."
+  },
+  "content_sha256": "d928ed3b8fea48bc1bd4fc542b7c42c7ac544528b94a2c691a8095b8ac7d1cad",
+  "extractor_model": "OFFLINE/SAHTE (Sentetik Ornek Veri)",
+  "extracted_at": "2026-11-18T01:41:21.016802Z"
+}

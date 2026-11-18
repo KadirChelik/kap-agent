@@ -1,0 +1,28 @@
+{
+  "metadata": {
+    "disclosure_id": "1403003",
+    "ticker": "KCHOL",
+    "company_name": "Koç Holding A.Ş.",
+    "disclosure_type": "material_event",
+    "published_at": "2026-04-22T18:05:00+03:00",
+    "source_url": "https://www.kap.org.tr/tr/Bildirim/1403003",
+    "title": "Yeni Nesil Batarya ve Enerji Depolama Tesisi Yatırım Kararı",
+    "summary_tr": "KCHOL (investment_capex): Yeni Nesil Batarya ve Enerji Depolama Tesisi Yatırım Kararı",
+    "extraction_confidence": 0.92,
+    "low_confidence_fields": [],
+    "human_verified": false
+  },
+  "extracted": {
+    "event_category": "investment_capex",
+    "counterparty": "Ortak Girişim Konsorsiyumu",
+    "contract_amount_original": 450000000.0,
+    "contract_currency": "USD",
+    "contract_amount_try_equiv": 16200000000.0,
+    "revenue_ratio_pct": null,
+    "expected_impact": "positive",
+    "evidence_quote": "Koç Holding A.Ş. (KCHOL) tarafından yapılan özel durum açıklaması: Yeni Nesil Batarya ve Enerji Depolama Tesisi Yatırım Kararı. Karşı taraf: Ortak Girişim Konsorsiyumu. Sözleşme/yatırım bedeli 450,000,000 USD (yaklaşık 16,200,000,000 TRY) tutarındadır."
+  },
+  "content_sha256": "757c7bb3081b480b197bf79098f2b70bd93d7f585aacd7c6ff8878050db016cb",
+  "extractor_model": "OFFLINE/SAHTE (Sentetik Ornek Veri)",
+  "extracted_at": "2026-11-18T01:41:21.022941Z"
+}

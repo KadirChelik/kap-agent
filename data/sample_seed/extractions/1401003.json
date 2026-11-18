@@ -1,0 +1,30 @@
+{
+  "metadata": {
+    "disclosure_id": "1401003",
+    "ticker": "TOASO",
+    "company_name": "Tofaş Türk Otomobil Fabrikası A.Ş.",
+    "disclosure_type": "dividend",
+    "published_at": "2026-04-02T18:05:00+03:00",
+    "source_url": "https://www.kap.org.tr/tr/Bildirim/1401003",
+    "title": "Kar Payı Dağıtım İşlemlerine İlişkin Bildirim",
+    "summary_tr": "TOASO 2025 yılı kar payı (approved): brüt 20.00 TL, net 18.00 TL.",
+    "extraction_confidence": 0.96,
+    "low_confidence_fields": [],
+    "human_verified": false
+  },
+  "extracted": {
+    "decision_status": "approved",
+    "fiscal_year": 2025,
+    "gross_cash_per_share_try": 20.0,
+    "net_cash_per_share_try": 18.0,
+    "total_gross_cash_dividend_try": 10000000000.0,
+    "bonus_share_rate_pct": null,
+    "payment_type": "single",
+    "ex_dividend_date": "2026-04-16",
+    "payment_date": "2026-04-20",
+    "evidence_quote": "Tofaş Türk Otomobil Fabrikası A.Ş. 2025 yılı hesap dönemi kârından 1 TL nominal değerli paya brüt 20,00 TL, net 18,00 TL nakit kar payının tek seferde peşin ödeme şeklinde dağıtılması Genel Kurulda onaylanmıştır. Nakit kar payı hak kullanım tarihi 2026-04-16, ödeme tarihi 2026-04-20 olarak belirlenmiştir."
+  },
+  "content_sha256": "8d46149e637440b210bffc99c97a4336d685a199cdb7fc8d266b948d19f24db7",
+  "extractor_model": "OFFLINE/SAHTE (Sentetik Ornek Veri)",
+  "extracted_at": "2026-11-18T01:41:21.009648Z"
+}

@@ -1,0 +1,30 @@
+{
+  "metadata": {
+    "disclosure_id": "1401004",
+    "ticker": "BIMAS",
+    "company_name": "BİM Birleşik Mağazalar A.Ş.",
+    "disclosure_type": "dividend",
+    "published_at": "2026-03-20T18:30:00+03:00",
+    "source_url": "https://www.kap.org.tr/tr/Bildirim/1401004",
+    "title": "Kar Payı Dağıtım İşlemlerine İlişkin Bildirim",
+    "summary_tr": "BIMAS 2025 yılı kar payı (proposed): brüt 12.50 TL, net 11.25 TL.",
+    "extraction_confidence": 0.94,
+    "low_confidence_fields": [],
+    "human_verified": false
+  },
+  "extracted": {
+    "decision_status": "proposed",
+    "fiscal_year": 2025,
+    "gross_cash_per_share_try": 12.5,
+    "net_cash_per_share_try": 11.25,
+    "total_gross_cash_dividend_try": 7590000000.0,
+    "bonus_share_rate_pct": null,
+    "payment_type": "installments",
+    "ex_dividend_date": "2026-05-15",
+    "payment_date": "2026-05-20",
+    "evidence_quote": "BİM Birleşik Mağazalar A.Ş. 2025 yılı hesap dönemi kârından 1 TL nominal değerli paya brüt 12,50 TL, net 11,25 TL nakit kar payının taksitli ödeme şeklinde dağıtılması Genel Kurul onayına teklif edilmiştir. Nakit kar payı hak kullanım tarihi 2026-05-15, ödeme tarihi 2026-05-20 olarak belirlenmiştir."
+  },
+  "content_sha256": "4fb9547aaf7fbaf1d291748726f62332482e0a9899b746ede2ff732c62acaf16",
+  "extractor_model": "OFFLINE/SAHTE (Sentetik Ornek Veri)",
+  "extracted_at": "2026-11-18T01:41:21.009648Z"
+}

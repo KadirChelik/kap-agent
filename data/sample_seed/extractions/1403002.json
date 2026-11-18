@@ -1,0 +1,28 @@
+{
+  "metadata": {
+    "disclosure_id": "1403002",
+    "ticker": "ASTOR",
+    "company_name": "Astor Enerji A.Ş.",
+    "disclosure_type": "material_event",
+    "published_at": "2026-05-18T10:05:00+03:00",
+    "source_url": "https://www.kap.org.tr/tr/Bildirim/1403002",
+    "title": "Yüksek Gerilim Güç Transformatörü İhracat Sözleşmesi",
+    "summary_tr": "ASTOR (new_business_contract): Yüksek Gerilim Güç Transformatörü İhracat Sözleşmesi",
+    "extraction_confidence": 0.96,
+    "low_confidence_fields": [],
+    "human_verified": false
+  },
+  "extracted": {
+    "event_category": "new_business_contract",
+    "counterparty": "Avrupa Enerji Dağıtım Operatörü",
+    "contract_amount_original": 42500000.0,
+    "contract_currency": "EUR",
+    "contract_amount_try_equiv": 1615000000.0,
+    "revenue_ratio_pct": 6.1,
+    "expected_impact": "positive",
+    "evidence_quote": "Astor Enerji A.Ş. (ASTOR) tarafından yapılan özel durum açıklaması: Yüksek Gerilim Güç Transformatörü İhracat Sözleşmesi. Karşı taraf: Avrupa Enerji Dağıtım Operatörü. Sözleşme/yatırım bedeli 42,500,000 EUR (yaklaşık 1,615,000,000 TRY) tutarındadır. Bedelin son yıllık hasılata oranı %6.10 düzeyindedir."
+  },
+  "content_sha256": "e96990b850a6e41150e4dc3b411a5232fd64df10574bcaa50339814d1856662e",
+  "extractor_model": "OFFLINE/SAHTE (Sentetik Ornek Veri)",
+  "extracted_at": "2026-11-18T01:41:21.021941Z"
+}

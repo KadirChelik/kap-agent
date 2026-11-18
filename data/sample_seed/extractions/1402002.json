@@ -1,0 +1,33 @@
+{
+  "metadata": {
+    "disclosure_id": "1402002",
+    "ticker": "PGSUS",
+    "company_name": "Pegasus Hava Taşımacılığı A.Ş.",
+    "disclosure_type": "financial_report",
+    "published_at": "2026-03-04T18:20:00+03:00",
+    "source_url": "https://www.kap.org.tr/tr/Bildirim/1402002",
+    "title": "2025/12 Finansal Rapor (TMS/TFRS Konsolide)",
+    "summary_tr": "PGSUS 2025/12 finansal rapor: Hasılat 118,500 Mn TL, Net Kâr 14,200 Mn TL.",
+    "extraction_confidence": 0.96,
+    "low_confidence_fields": [],
+    "human_verified": false
+  },
+  "extracted": {
+    "period": "2025/12",
+    "consolidation": "consolidated",
+    "currency": "TRY",
+    "presentation_scale": "millions",
+    "revenue_try": 118500000000.0,
+    "gross_profit_try": 36800000000.0,
+    "ebitda_try": 32400000000.0,
+    "operating_profit_try": 22900000000.0,
+    "net_profit_try": 14200000000.0,
+    "total_assets_try": 294000000000.0,
+    "total_equity_try": 89500000000.0,
+    "net_debt_try": 94200000000.0,
+    "evidence_quote": "Pegasus Hava Taşımacılığı A.Ş. 2025/12 dönemi konsolide finansal tablolarına göre (Milyon TL): Hasılat 118,500.0 Milyon TL, Brüt Kâr 36,800.0 Milyon TL, FAVÖK 32,400.0 Milyon TL, Esas Faaliyet Kârı 22,900.0 Milyon TL, Net Dönem Kârı 14,200.0 Milyon TL'dir. Toplam Varlıklar 294,000.0 Milyon TL, Özkaynaklar 89,500.0 Milyon TL, Net borç 94,200.0 Milyon TL."
+  },
+  "content_sha256": "a7a58f5a165dbc35caf4a4581abadcd1a8cc9be6936be5c07d4b3c133acc1bf2",
+  "extractor_model": "OFFLINE/SAHTE (Sentetik Ornek Veri)",
+  "extracted_at": "2026-11-18T01:41:21.015799Z"
+}

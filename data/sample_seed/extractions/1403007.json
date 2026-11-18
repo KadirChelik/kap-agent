@@ -1,0 +1,28 @@
+{
+  "metadata": {
+    "disclosure_id": "1403007",
+    "ticker": "SAHOL",
+    "company_name": "Hacı Ömer Sabancı Holding A.Ş.",
+    "disclosure_type": "material_event",
+    "published_at": "2026-06-19T18:30:00+03:00",
+    "source_url": "https://www.kap.org.tr/tr/Bildirim/1403007",
+    "title": "Pay Geri Alım Programı Kapsamında Yapılan İşlemler",
+    "summary_tr": "SAHOL (share_buyback): Pay Geri Alım Programı Kapsamında Yapılan İşlemler",
+    "extraction_confidence": 0.94,
+    "low_confidence_fields": [],
+    "human_verified": false
+  },
+  "extracted": {
+    "event_category": "share_buyback",
+    "counterparty": "Borsa İstanbul Piyasası",
+    "contract_amount_original": 185000000.0,
+    "contract_currency": "TRY",
+    "contract_amount_try_equiv": 185000000.0,
+    "revenue_ratio_pct": null,
+    "expected_impact": "neutral",
+    "evidence_quote": "Hacı Ömer Sabancı Holding A.Ş. (SAHOL) tarafından yapılan özel durum açıklaması: Pay Geri Alım Programı Kapsamında Yapılan İşlemler. Karşı taraf: Borsa İstanbul Piyasası. Sözleşme/yatırım bedeli 185,000,000 TRY (yaklaşık 185,000,000 TRY) tutarındadır."
+  },
+  "content_sha256": "57be0c07b4a7bda0fd39b521ae5aef2397db1063db6a62b44e9ce8d1520903a4",
+  "extractor_model": "OFFLINE/SAHTE (Sentetik Ornek Veri)",
+  "extracted_at": "2026-11-18T01:41:21.026077Z"
+}

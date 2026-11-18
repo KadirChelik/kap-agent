@@ -1,0 +1,33 @@
+{
+  "metadata": {
+    "disclosure_id": "1401007",
+    "ticker": "EREGL",
+    "company_name": "Ereğli Demir ve Çelik Fabrikaları T.A.Ş.",
+    "disclosure_type": "dividend",
+    "published_at": "2026-03-14T18:40:00+03:00",
+    "source_url": "https://www.kap.org.tr/tr/Bildirim/1401007",
+    "title": "Kar Payı Dağıtım İşlemlerine İlişkin Bildirim",
+    "summary_tr": "EREGL 2025 yılı kar payı (proposed): brüt 0.50 TL, net 0.45 TL.",
+    "extraction_confidence": 0.72,
+    "low_confidence_fields": [
+      "ex_dividend_date",
+      "payment_date"
+    ],
+    "human_verified": false
+  },
+  "extracted": {
+    "decision_status": "proposed",
+    "fiscal_year": 2025,
+    "gross_cash_per_share_try": 0.5,
+    "net_cash_per_share_try": 0.45,
+    "total_gross_cash_dividend_try": 1750000000.0,
+    "bonus_share_rate_pct": null,
+    "payment_type": "single",
+    "ex_dividend_date": null,
+    "payment_date": null,
+    "evidence_quote": "Ereğli Demir ve Çelik Fabrikaları T.A.Ş. 2025 yılı hesap dönemi kârından 1 TL nominal değerli paya brüt 0,50 TL, net 0,45 TL nakit kar payının tek seferde peşin ödeme şeklinde dağıtılması Genel Kurul onayına teklif edilmiştir. Hak kullanım ve ödeme tarihleri Olağan Genel Kurul onayının ardından belirlenecektir."
+  },
+  "content_sha256": "b04f54a45681f53eca55b5a35a6bc6c20d7d309de79e342f32f6a5ffa75cf63b",
+  "extractor_model": "OFFLINE/SAHTE (Sentetik Ornek Veri)",
+  "extracted_at": "2026-11-18T01:41:21.012799Z"
+}

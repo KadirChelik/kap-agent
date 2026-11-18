@@ -1,0 +1,36 @@
+{
+  "metadata": {
+    "disclosure_id": "1402007",
+    "ticker": "SISE",
+    "company_name": "Türkiye Şişe ve Cam Fabrikaları A.Ş.",
+    "disclosure_type": "financial_report",
+    "published_at": "2026-03-06T18:50:00+03:00",
+    "source_url": "https://www.kap.org.tr/tr/Bildirim/1402007",
+    "title": "2025/12 Finansal Rapor (TMS/TFRS Konsolide)",
+    "summary_tr": "SISE 2025/12 finansal rapor: Hasılat 196,500 Mn TL, Net Kâr 8,100 Mn TL.",
+    "extraction_confidence": 0.74,
+    "low_confidence_fields": [
+      "ebitda_try",
+      "net_debt_try"
+    ],
+    "human_verified": false
+  },
+  "extracted": {
+    "period": "2025/12",
+    "consolidation": "consolidated",
+    "currency": "TRY",
+    "presentation_scale": "millions",
+    "revenue_try": 196500000000.0,
+    "gross_profit_try": 46200000000.0,
+    "ebitda_try": null,
+    "operating_profit_try": 13400000000.0,
+    "net_profit_try": 8100000000.0,
+    "total_assets_try": 392000000000.0,
+    "total_equity_try": 188000000000.0,
+    "net_debt_try": null,
+    "evidence_quote": "Türkiye Şişe ve Cam Fabrikaları A.Ş. 2025/12 dönemi konsolide finansal tablolarına göre (Milyon TL): Hasılat 196,500.0 Milyon TL, Brüt Kâr 46,200.0 Milyon TL, FAVÖK tutarı dipnotlarda ayrıca detaylandırılmamıştır, Esas Faaliyet Kârı 13,400.0 Milyon TL, Net Dönem Kârı 8,100.0 Milyon TL'dir. Toplam Varlıklar 392,000.0 Milyon TL, Özkaynaklar 188,000.0 Milyon TL, Net nakit/borç detayı dipnot tablosunda yer almaktadır."
+  },
+  "content_sha256": "fedf04627d99f086a18c4a3c1684865052d714040ec445336a369f429a1ddf0e",
+  "extractor_model": "OFFLINE/SAHTE (Sentetik Ornek Veri)",
+  "extracted_at": "2026-11-18T01:41:21.019898Z"
+}

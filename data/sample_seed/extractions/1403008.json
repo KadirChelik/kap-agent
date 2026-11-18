@@ -1,0 +1,28 @@
+{
+  "metadata": {
+    "disclosure_id": "1403008",
+    "ticker": "ENKAI",
+    "company_name": "Enka İnşaat ve Sanayi A.Ş.",
+    "disclosure_type": "material_event",
+    "published_at": "2026-07-02T09:05:00+03:00",
+    "source_url": "https://www.kap.org.tr/tr/Bildirim/1403008",
+    "title": "Doğalgaz Çevrim Santrali EPC Müteahhitlik Sözleşmesi",
+    "summary_tr": "ENKAI (new_business_contract): Doğalgaz Çevrim Santrali EPC Müteahhitlik Sözleşmesi",
+    "extraction_confidence": 0.97,
+    "low_confidence_fields": [],
+    "human_verified": false
+  },
+  "extracted": {
+    "event_category": "new_business_contract",
+    "counterparty": "Orta Asya Enerji İdaresi",
+    "contract_amount_original": 620000000.0,
+    "contract_currency": "USD",
+    "contract_amount_try_equiv": 22320000000.0,
+    "revenue_ratio_pct": 14.8,
+    "expected_impact": "positive",
+    "evidence_quote": "Enka İnşaat ve Sanayi A.Ş. (ENKAI) tarafından yapılan özel durum açıklaması: Doğalgaz Çevrim Santrali EPC Müteahhitlik Sözleşmesi. Karşı taraf: Orta Asya Enerji İdaresi. Sözleşme/yatırım bedeli 620,000,000 USD (yaklaşık 22,320,000,000 TRY) tutarındadır. Bedelin son yıllık hasılata oranı %14.80 düzeyindedir."
+  },
+  "content_sha256": "1d23a104f8349324de7f0501735a0bb402d12549444ac5418fb584fa6d3d477c",
+  "extractor_model": "OFFLINE/SAHTE (Sentetik Ornek Veri)",
+  "extracted_at": "2026-11-18T01:41:21.027041Z"
+}
