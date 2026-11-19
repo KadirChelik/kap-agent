@@ -22,10 +22,10 @@ from app.llm.gemini import OfflineFallbackProvider
 from app.schemas.agent import AgentRunResult, TraceStep
 
 DEMO_QUESTIONS: tuple[str, ...] = (
-    "2025 yılı için hisse başına en yüksek net nakit temettü dağıtan 3 şirket hangileri?",
-    "2025/12 finansal raporlarına göre en yüksek net kâr açıklayan şirketler hangileri?",
-    "ASELS ve ENKAI özel durum sözleşme bildirimlerini karşılaştır",
-    "THYAO hissesi bu fiyattan alınır mı?",
+    "Hisse başına en yüksek net nakit temettü dağıtan 5 şirket hangileridir?",
+    "2026/09 döneminde hasılatı en yüksek 5 şirketi ve net kârlarını sırala",
+    "ASELS ve FROTO'nun 2025/09 ile 2026/09 hasılat ve net kâr gelişimini karşılaştır",
+    "2026 yılındaki pay geri alım, yatırım ve beklenti revizyonu bildirimlerini özetle",
 )
 
 _NORM_SPACE_RE = re.compile(r"\s+")
@@ -65,6 +65,10 @@ class ChatQuotaManager:
     def reset(self) -> None:
         self._ip_hits.clear()
         self._global_hits.clear()
+        self._cache.clear()
+
+    def clear_cache(self) -> None:
+        """Clear cached question responses after fresh KAP disclosures are ingested."""
         self._cache.clear()
 
     def configure_limits(

@@ -79,13 +79,29 @@ def create_app(
             sync_state["running"] = True
             active_db = Path(getattr(app_instance.state, "db_path", resolved_db))
             active_provider = getattr(app_instance.state, "llm_provider", None)
+            # Cold-start deploys start with <=24 sample rows: scan 45 days on first boot
+            lookback_override = settings.kap_sync_lookback_days
+            limit_override = settings.kap_sync_limit_per_ticker
+            if active_db.exists():
+                chk = get_write_conn(active_db)
+                try:
+                    row_cnt = int(chk.execute("SELECT COUNT(*) FROM disclosures").fetchone()[0])
+                    if row_cnt <= 24:
+                        lookback_override = max(45, settings.kap_sync_lookback_days)
+                        limit_override = max(8, settings.kap_sync_limit_per_ticker)
+                finally:
+                    chk.close()
             try:
                 result = await asyncio.to_thread(
                     run_incremental_sync,
                     settings=settings,
+                    lookback_days=lookback_override,
+                    limit_per_ticker=limit_override,
                     db_path=active_db,
                     provider=active_provider,
                 )
+                if int(result.get("loaded_to_db") or 0) > 0:
+                    app_instance.state.quota_manager.clear_cache()
                 sync_state["last_sync_at"] = result.get("synced_at") or datetime.now(timezone.utc).isoformat()
                 sync_state["last_sync_monotonic"] = time.monotonic()
                 sync_state["last_status"] = "ok"

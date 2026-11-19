@@ -31,7 +31,7 @@ KAP Agent, halüsinasyon riskini ve API maliyetini düşürmek için **Çevrimd�
 ## Veri Kaynağı Şeffaflığı ve Canlı Eval Sonuçları
 
 - Repodaki `data/sample_seed/` (24 bildirim: 8 temettü, 8 finansal rapor, 8 özel durum) kurulumsuz unit test ve CI doğrulaması için deterministik test verisi olarak korunur (`SYNTHETIC_SAMPLE_SEED`).
-- Yerel üretim veritabanı (`data/kap_agent.db`, `.gitignore` altında) BIST 30'daki 18 banka dışı şirketten `fetcher.py` ile çekilmiş **102 gerçek KAP bildirimi** içerir (`7` temettü/avans, `19` finansal/faaliyet/sorumluluk bildirimi, `76` özel durum açıklaması).
+- Yerel üretim veritabanı (`data/kap_agent.db`, `.gitignore` altında) BIST 30'daki 18 banka dışı şirketten çekilmiş **185 gerçek KAP bildirimi** içerir (`2025-04-28` – `2026-11-19`); `2026/09` finansal sonuçları yayımlanan **17/18** şirketin tamamı kapsanmıştır *(KONTR SPK ek süre kapsamında, `kap:1695620`)*. Arka plan senkronizasyonu (`KAP_AUTO_SYNC_ENABLED=true`, her `15 dk` ve soğuk başlangıçta `45` günlük otomatik tarama) ile yeni bildirimler otomatik eklenir.
 - `evals/extraction_gold.jsonl` (50 gerçek bildirim) ve `evals/agent_gold.jsonl` (30 gerçek soru) kayıtları canlı `https://www.kap.org.tr/tr/Bildirim/<ID>` sayfalarıyla (`51/51 HTTP 200 OK`) karşılaştırılıp doğrulanarak **`"verified": true`** işaretlenmiştir.
 - Değerlendirme betikleri **yalnızca `"verified": true` kayıtlar üzerinden** metrik hesaplar; API anahtarı olmayan/offline koşullarda çalıştırıldığında **`OFFLINE/SAHTE`** uyarısı basar.
 
@@ -83,14 +83,19 @@ python evals/run_extraction_eval.py --live
 python evals/run_agent_eval.py --live
 ```
 
-### 4. Testler
+### 4. Testler, CI ve Docker
 ```powershell
 # Backend (pytest)
 cd backend && python -m pytest
 
 # Frontend (vitest + build)
 cd frontend && npm test && npm run build
+
+# Docker Compose ile tek komut çalıştırma
+docker compose up --build
 ```
+
+Otomatik CI (`.github/workflows/ci.yml`), `master`/`main` push ve PR'larda backend `pytest` ve frontend `vitest` + `vite build` adımlarını çalıştırır.
 
 ### 5. MCP Server Entegrasyonu (`mcp_config.json`)
 ```json

@@ -1,0 +1,10 @@
+.git
+.env
+data/raw
+data/extractions
+data/kap_agent.db*
+frontend/node_modules
+frontend/dist
+backend/.pytest_cache
+__pycache__
+*.pyc
