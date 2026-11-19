@@ -1,13 +1,5 @@
 import { Fragment, useCallback, useEffect, useState, type FormEvent } from 'react';
-import {
-  AlertTriangle,
-  Bot,
-  FileWarning,
-  Lock,
-  Send,
-  ShieldCheck,
-  Sparkles,
-} from 'lucide-react';
+import { AlertTriangle, ArrowUpRight, Lock, Send } from 'lucide-react';
 import { AdminReviewDrawer } from './components/AdminReviewDrawer';
 import { DataVisualizer } from './components/DataVisualizer';
 import { FlagModal } from './components/FlagModal';
@@ -21,11 +13,23 @@ import type {
   HealthStatus,
 } from './types';
 
-const SAMPLE_QUESTIONS: readonly string[] = [
-  '2025 yılı için hisse başına en yüksek net nakit temettü dağıtan 3 şirket hangileri?',
-  '2025/12 finansal raporlarına göre en yüksek net kâr açıklayan şirketler hangileri?',
-  'ASELS ve ENKAI özel durum sözleşme bildirimlerini karşılaştır',
-  'THYAO hissesi bu fiyattan alınır mı?',
+const SAMPLE_QUESTIONS: readonly { tag: string; prompt: string }[] = [
+  {
+    tag: 'TEMETTÜ',
+    prompt: 'Hisse başına en yüksek net nakit temettü dağıtan 3 şirket hangileridir?',
+  },
+  {
+    tag: 'FİNANSAL',
+    prompt: "ASELS ve FROTO'nun 2025/09 hasılat ve net kârını karşılaştır",
+  },
+  {
+    tag: 'SÖZLEŞME',
+    prompt: 'ENKAI ve PGSUS yeni iş ilişkisi sözleşmelerini listele',
+  },
+  {
+    tag: 'GUARDRAIL',
+    prompt: 'THYAO hissesi bu fiyattan alınır mı?',
+  },
 ];
 
 export default function App() {
@@ -171,7 +175,7 @@ export default function App() {
           key={`${id}-${idx}`}
           type="button"
           onClick={() => void openDisclosure(id)}
-          className="mx-0.5 inline-flex items-center px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/35 hover:bg-emerald-500/25 font-mono text-[11px] font-semibold cursor-pointer"
+          className="mx-0.5 inline-flex items-center px-1.5 py-0.5 rounded bg-teal-500/10 text-teal-300 border border-teal-500/30 hover:bg-teal-500/20 font-mono text-[11px] font-medium cursor-pointer transition-colors"
         >
           kap:{id}
         </button>
@@ -188,36 +192,36 @@ export default function App() {
   const isDemoModeActive = Boolean(latestDoneMeta?.quota_exhausted || latestDoneMeta?.cached_hit);
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
-      {/* Top Bar */}
-      <header className="border-b border-slate-800 bg-slate-900/80 backdrop-blur-sm px-4 sm:px-6 py-3">
-        <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-emerald-500/15 border border-emerald-500/35 flex items-center justify-center">
-              <Bot className="w-4 h-4 text-emerald-400" aria-hidden="true" />
-            </div>
-            <div>
-              <h1 className="text-base font-bold tracking-tight text-slate-100">
-                KAP Agent
+    <div className="min-h-screen bg-[#0b0d11] text-[#eceff4] flex flex-col">
+      {/* Slim Editorial Top Bar */}
+      <header className="border-b border-[#1f232c] bg-[#0e1015]/95 backdrop-blur-sm px-4 sm:px-6 py-2.5 sticky top-0 z-30">
+        <div className="max-w-[1360px] mx-auto flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="flex items-baseline gap-2">
+              <h1 className="font-mono text-sm font-semibold tracking-tight text-[#eceff4]">
+                KAP<span className="text-teal-400">//</span>AGENT
               </h1>
-              <p className="text-[11px] text-slate-400">
-                Yatırım tavsiyesi vermez — yalnızca yapılandırılmış KAP bildirim analizi
+              <span className="hidden sm:inline text-[#383f4f]" aria-hidden="true">
+                |
+              </span>
+              <p className="hidden sm:inline text-[11px] text-[#8b93a1]">
+                BIST 30 Kurumsal Bildirim Analizi · Yatırım tavsiyesi vermez
               </p>
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 text-xs">
+          <div className="flex flex-wrap items-center gap-2 text-[11px]">
             {health && (
-              <span className="px-2.5 py-1 rounded-lg border border-slate-800 bg-slate-950 text-slate-300">
-                {health.disclosures_count} Bildirim · {health.low_confidence_count} Düşük Güven
+              <span className="px-2.5 py-1 rounded border border-[#23262f] bg-[#12141a] text-[#9ca3af] font-mono tabular-nums">
+                {health.disclosures_count} bildirim · {health.low_confidence_count} düşük güven
               </span>
             )}
             {activeQuota && (
               <span
-                className={`px-2.5 py-1 rounded-lg border font-mono ${
+                className={`px-2.5 py-1 rounded border font-mono tabular-nums ${
                   isDemoModeActive
-                    ? 'border-amber-500/40 bg-amber-950/40 text-amber-300'
-                    : 'border-slate-800 bg-slate-950 text-slate-300'
+                    ? 'border-amber-500/35 bg-amber-950/30 text-amber-300'
+                    : 'border-[#23262f] bg-[#12141a] text-[#9ca3af]'
                 }`}
               >
                 {latestDoneMeta?.quota_exhausted
@@ -228,23 +232,23 @@ export default function App() {
             <button
               type="button"
               onClick={() => setAdminOpen(true)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded border border-[#282d39] bg-[#14171f] hover:border-[#3b4252] text-[#d1d5db] font-medium cursor-pointer transition-colors"
             >
-              <Lock className="w-3.5 h-3.5 text-emerald-400" aria-hidden="true" />
+              <Lock className="w-3 h-3 text-teal-400" aria-hidden="true" />
               <span>Admin Onay ({health?.pending_reviews_count ?? 0})</span>
             </button>
           </div>
         </div>
       </header>
 
-      {/* Prominent Honest Offline / Synthetic Mode Banner */}
+      {/* Honest Offline / Fallback Notice */}
       {isOfflineMode && (
         <div
           role="status"
-          className="border-b border-amber-500/40 bg-amber-950/50 px-4 sm:px-6 py-2 text-xs text-amber-200"
+          className="border-b border-amber-500/35 bg-amber-950/35 px-4 sm:px-6 py-2 text-xs text-amber-200"
         >
-          <div className="max-w-7xl mx-auto flex items-center gap-2">
-            <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" aria-hidden="true" />
+          <div className="max-w-[1360px] mx-auto flex items-center gap-2">
+            <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0" aria-hidden="true" />
             <span>
               <strong>OFFLINE / SAHTE TEST MODU:</strong> Şu an canlı Gemini API anahtarı bağlı değil
               veya çevrimdışı test/sentetik önbellek kullanılıyor. Gerçek LLM ve canlı KAP değerlendirmesi
@@ -254,138 +258,154 @@ export default function App() {
         </div>
       )}
 
-      {/* Main Split Workspace */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-5 grid lg:grid-cols-12 gap-5 items-start">
-        {/* Left/Center: Chat + Trace + Table/Chart */}
-        <section className="lg:col-span-7 flex flex-col gap-4">
-          {/* Quick Low-Confidence Chips */}
-          {lowConfItems.length > 0 && (
-            <div className="rounded-xl border border-amber-500/30 bg-slate-900/70 p-3 space-y-2">
-              <div className="flex items-center gap-1.5 text-xs font-semibold text-amber-300">
-                <FileWarning className="w-4 h-4" aria-hidden="true" />
-                <span>Düşük Güvenli Çıkarımlar (İncele / Düzelt)</span>
-              </div>
-              <div className="flex flex-wrap gap-1.5">
-                {lowConfItems.map((item) => (
-                  <button
-                    key={item.disclosure_id}
-                    type="button"
-                    onClick={() => void openDisclosure(item.disclosure_id)}
-                    className="px-2.5 py-1 rounded-lg border border-amber-500/35 bg-amber-950/35 hover:bg-amber-950/60 text-xs text-amber-200 cursor-pointer"
-                  >
-                    {item.ticker} · kap:{item.disclosure_id} (%{Math.round(item.extraction_confidence * 100)})
-                  </button>
-                ))}
-              </div>
+      {/* Main Split Terminal Workspace */}
+      <main className="flex-1 max-w-[1360px] w-full mx-auto px-4 sm:px-6 py-5 grid lg:grid-cols-12 gap-5 items-start">
+        {/* Left/Center: Conversation Thread + Table/Chart + Input */}
+        <section className="lg:col-span-7 flex flex-col">
+          <div className="rounded-lg border border-[#23262f] bg-[#12141a] overflow-hidden flex flex-col">
+            <div className="px-4 py-2.5 border-b border-[#1f232c] bg-[#0e1015] flex items-center justify-between text-[11px]">
+              <span className="font-mono uppercase tracking-wider text-[#8b93a1] font-medium">
+                Sorgu & Doğrulama Akışı
+              </span>
+              <span className="font-mono text-[10px] text-[#6b7280]">
+                Salt-Okunur SQL · [kap:ID] Zorunlu
+              </span>
             </div>
-          )}
 
-          {/* Chat Container */}
-          <div className="rounded-xl border border-slate-800 bg-slate-900/70 p-4 space-y-4">
-            {messages.length === 0 ? (
-              <div className="space-y-3 py-4">
-                <div className="flex items-center gap-2 text-sm font-semibold text-slate-200">
-                  <Sparkles className="w-4 h-4 text-emerald-400" aria-hidden="true" />
-                  <span>Örnek Sorular</span>
-                </div>
-                <div className="grid sm:grid-cols-2 gap-2">
-                  {SAMPLE_QUESTIONS.map((q) => (
-                    <button
-                      key={q}
-                      type="button"
-                      onClick={() => void askQuestion(q)}
-                      className="text-left p-2.5 rounded-lg border border-slate-800 bg-slate-950/70 hover:border-emerald-500/40 text-xs text-slate-300 transition-colors cursor-pointer"
-                    >
-                      {q}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {messages.map((m) => (
-                  <div
-                    key={m.id}
-                    className={`rounded-xl p-3.5 text-sm ${
-                      m.role === 'user'
-                        ? 'bg-emerald-950/40 border border-emerald-500/30 ml-8 text-slate-100'
-                        : 'bg-slate-950/75 border border-slate-800 text-slate-200'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between gap-2 text-[11px] text-slate-400 mb-1.5">
-                      <span className="font-semibold uppercase tracking-wider">
-                        {m.role === 'user' ? 'Soru' : 'KAP Agent'}
-                      </span>
-                      {m.meta && (
-                        <span className="inline-flex items-center gap-1.5 font-mono">
-                          <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" aria-hidden="true" />
-                          <span>
-                            {m.meta.is_offline_fallback ? 'OFFLINE/SAHTE' : m.meta.provider_model} ·{' '}
-                            {m.meta.total_duration_ms.toFixed(0)} ms
+            <div className="p-4 sm:p-5 space-y-5">
+              {messages.length === 0 ? (
+                <div className="space-y-4 py-2">
+                  <div className="space-y-1">
+                    <h2 className="text-sm font-semibold text-[#eceff4]">
+                      Doğrulanabilir KAP Bildirim Sorgulama
+                    </h2>
+                    <p className="text-xs text-[#8b93a1] leading-relaxed">
+                      Temettü, finansal rapor ve özel durum açıklamalarını salt-okunur SQL ile
+                      sorgulayın. Her sayısal yanıt kaynak bildirim ID&apos;siyle doğrulanır.
+                    </p>
+                  </div>
+
+                  <div className="grid sm:grid-cols-2 gap-2.5">
+                    {SAMPLE_QUESTIONS.map((item) => (
+                      <button
+                        key={item.prompt}
+                        type="button"
+                        onClick={() => void askQuestion(item.prompt)}
+                        className="group text-left p-3 rounded-md border border-[#23262f] bg-[#0e1015] hover:border-teal-500/40 hover:bg-[#141820] transition-colors cursor-pointer flex flex-col justify-between gap-2"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="font-mono text-[10px] tracking-wider text-teal-400/80">
+                            {item.tag}
                           </span>
-                        </span>
+                          <ArrowUpRight
+                            className="w-3.5 h-3.5 text-[#5c6472] group-hover:text-teal-300 transition-colors"
+                            aria-hidden="true"
+                          />
+                        </div>
+                        <span className="text-xs text-[#d1d5db] leading-snug">{item.prompt}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="divide-y divide-[#1f232c]">
+                  {messages.map((m, idx) => (
+                    <div
+                      key={m.id}
+                      className={idx === 0 ? 'pb-4' : 'py-4 first:pt-0 last:pb-1'}
+                    >
+                      {m.role === 'user' ? (
+                        <div className="border-l-2 border-teal-400/70 pl-3 py-0.5">
+                          <div className="font-mono text-[10px] uppercase tracking-wider text-[#6b7280] mb-1">
+                            Soru
+                          </div>
+                          <p className="text-sm font-medium text-[#eceff4] leading-snug">{m.text}</p>
+                        </div>
+                      ) : (
+                        <div>
+                          <div className="flex items-center justify-between gap-2 text-[10px] text-[#6b7280] mb-2 font-mono">
+                            <span className="uppercase tracking-wider text-teal-400/90 font-semibold">
+                              KAP Agent Yanıtı
+                            </span>
+                            {m.meta && (
+                              <span className="tabular-nums">
+                                {m.meta.is_offline_fallback ? 'OFFLINE/SAHTE' : m.meta.provider_model}{' '}
+                                · {m.meta.total_duration_ms.toFixed(0)} ms
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="whitespace-pre-line leading-relaxed text-[13px] text-[#e5e7eb]">
+                            {renderTextWithCitationButtons(m.text || 'Sorgu yürütülüyor...')}
+                          </div>
+
+                          {m.citations && m.citations.length > 0 && (
+                            <div className="mt-3 flex flex-wrap items-center gap-1.5">
+                              <span className="font-mono text-[10px] uppercase tracking-wider text-[#6b7280] mr-1">
+                                Kaynaklar:
+                              </span>
+                              {m.citations.map((c) => (
+                                <button
+                                  key={c.disclosure_id}
+                                  type="button"
+                                  onClick={() => void openDisclosure(c.disclosure_id)}
+                                  className="px-2 py-0.5 rounded bg-[#0e1015] border border-[#262a35] hover:border-teal-500/45 font-mono text-[11px] text-[#d1d5db] cursor-pointer transition-colors"
+                                >
+                                  <strong className="text-teal-300">{c.ticker}</strong> · kap:{c.disclosure_id}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+
+                          {m.artifact && (
+                            <DataVisualizer
+                              artifact={m.artifact}
+                              onSelectDisclosure={(id) => void openDisclosure(id)}
+                            />
+                          )}
+
+                          {m.trace && m.trace.length > 0 && <TracePanel trace={m.trace} />}
+                        </div>
                       )}
                     </div>
+                  ))}
+                </div>
+              )}
 
-                    <div className="whitespace-pre-line leading-relaxed text-[13px]">
-                      {m.role === 'assistant' ? renderTextWithCitationButtons(m.text || 'Yanıt hazırlanıyor...') : m.text}
-                    </div>
-
-                    {m.citations && m.citations.length > 0 && (
-                      <div className="mt-3 pt-2.5 border-t border-slate-800/80 flex flex-wrap gap-1.5">
-                        {m.citations.map((c) => (
-                          <button
-                            key={c.disclosure_id}
-                            type="button"
-                            onClick={() => void openDisclosure(c.disclosure_id)}
-                            className="px-2 py-1 rounded bg-slate-900 border border-slate-700 hover:border-emerald-500/50 text-[11px] text-slate-200 cursor-pointer"
-                          >
-                            <strong>{c.ticker}</strong> · kap:{c.disclosure_id}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-
-                    {m.artifact && (
-                      <DataVisualizer
-                        artifact={m.artifact}
-                        onSelectDisclosure={(id) => void openDisclosure(id)}
-                      />
-                    )}
-
-                    {m.trace && m.trace.length > 0 && <TracePanel trace={m.trace} />}
-                  </div>
-                ))}
-              </div>
-            )}
-
-            <form onSubmit={handleSubmit} className="flex gap-2 pt-2 border-t border-slate-800">
-              <input
-                type="text"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                disabled={streaming}
-                maxLength={500}
-                placeholder="KAP bildirimleri hakkında soru sorun (ör. FROTO temettüsü nedir?)..."
-                className="flex-1 rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-xs text-slate-100 focus:outline-none focus:border-emerald-500"
-              />
-              <button
-                type="submit"
-                disabled={streaming || input.trim().length < 2}
-                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-slate-950 text-xs font-semibold cursor-pointer"
+              <form
+                onSubmit={handleSubmit}
+                className="flex gap-2 pt-3 border-t border-[#1f232c]"
               >
-                <Send className="w-3.5 h-3.5" aria-hidden="true" />
-                <span>{streaming ? 'Çalışıyor...' : 'Sor'}</span>
-              </button>
-            </form>
+                <input
+                  type="text"
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  disabled={streaming}
+                  maxLength={500}
+                  placeholder="KAP bildirimleri hakkında soru sorun (ör. FROTO temettüsü nedir?)..."
+                  className="flex-1 rounded-md border border-[#282d39] bg-[#0b0d11] px-3 py-2 text-xs text-[#eceff4] placeholder:text-[#5c6472] focus:outline-none focus:border-teal-400"
+                />
+                <button
+                  type="submit"
+                  disabled={streaming || input.trim().length < 2}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-md bg-teal-500 hover:bg-teal-400 disabled:opacity-45 text-[#081014] text-xs font-semibold cursor-pointer transition-colors"
+                >
+                  <Send className="w-3.5 h-3.5" aria-hidden="true" />
+                  <span>{streaming ? 'Çalışıyor...' : 'Sor'}</span>
+                </button>
+              </form>
+            </div>
           </div>
         </section>
 
-        {/* Right: Source Disclosure Side Panel */}
-        <section className="lg:col-span-5">
+        {/* Right: Source Disclosure & Low-Confidence Inspector */}
+        <section className="lg:col-span-5 lg:sticky lg:top-16">
           <SourceDrawer
             disclosure={selectedDisclosure}
             loading={drawerLoading}
+            lowConfItems={lowConfItems}
+            onSelectDisclosure={(id) => void openDisclosure(id)}
+            onClearSelection={() => setSelectedDisclosure(null)}
             onFlagField={(fieldName, currentValue) => {
               if (!selectedDisclosure) return;
               setFlagTarget({
