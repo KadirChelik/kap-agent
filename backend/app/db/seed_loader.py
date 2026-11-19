@@ -22,6 +22,7 @@ def load_dataset_into_db(
     extractions_dir: Path,
     db_path: Path,
     reset: bool = False,
+    disclosure_ids: Optional[set[str]] = None,
 ) -> dict[str, int]:
     """
     Validate all raw + extraction JSON pairs and upsert them into SQLite + FTS5.
@@ -45,6 +46,8 @@ def load_dataset_into_db(
                 conn.execute(f"DELETE FROM {tbl}")
             conn.commit()
         for raw_file in sorted(Path(raw_dir).glob("*.json")):
+            if disclosure_ids is not None and raw_file.stem not in disclosure_ids:
+                continue
             raw = RawDisclosure.model_validate_json(raw_file.read_text(encoding="utf-8"))
             ext_file = Path(extractions_dir) / f"{raw.disclosure_id}.json"
             if not ext_file.exists():

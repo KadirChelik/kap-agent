@@ -61,17 +61,29 @@ export interface RemainingQuota {
   remaining_global_day: number;
 }
 
+export interface SyncStatus {
+  auto_sync_enabled: boolean;
+  interval_sec: number;
+  lookback_days: number;
+  running: boolean;
+  last_sync_at: string | null;
+  last_status: string;
+  last_error: string | null;
+}
+
 export interface HealthStatus {
   status: string;
   disclosures_count: number;
   low_confidence_count: number;
   pending_reviews_count: number;
+  latest_disclosure_at?: string | null;
   has_live_gemini: boolean;
   is_offline_fallback: boolean;
   provider_model: string;
   execution_mode: string;
   demo_questions?: string[];
   remaining_quota?: RemainingQuota;
+  sync?: SyncStatus;
 }
 
 export interface ChatDoneMeta {

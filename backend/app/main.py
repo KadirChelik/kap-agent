@@ -1,8 +1,12 @@
-"""FastAPI application factory, startup auto-seed, CORS, and health diagnostics."""
+"""FastAPI application factory, startup auto-seed, continuous KAP sync, and health diagnostics."""
 
 from __future__ import annotations
 
+import asyncio
+import os
 import time
+from contextlib import asynccontextmanager
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Optional
 
@@ -22,6 +26,7 @@ from app.config import get_settings
 from app.db.connection import get_write_conn
 from app.db.seed_loader import load_dataset_into_db
 from app.llm.gemini import get_extraction_provider
+from app.pipeline.sync import run_incremental_sync
 
 
 def create_app(
@@ -29,6 +34,7 @@ def create_app(
     db_path: Optional[Path] = None,
     admin_token: Optional[str] = None,
     global_rate_limit_per_min: Optional[int] = None,
+    enable_auto_sync: Optional[bool] = None,
 ) -> FastAPI:
     settings = get_settings()
     resolved_db = Path(db_path) if db_path else settings.db_path
@@ -36,6 +42,15 @@ def create_app(
         global_rate_limit_per_min
         if global_rate_limit_per_min is not None
         else settings.api_global_rate_limit_per_min
+    )
+    auto_sync_enabled = (
+        enable_auto_sync
+        if enable_auto_sync is not None
+        else bool(
+            db_path is None
+            and not os.getenv("PYTEST_CURRENT_TEST")
+            and settings.kap_auto_sync_enabled
+        )
     )
 
     # Seed from tracked sample_seed on first boot so local demo works immediately
@@ -46,10 +61,76 @@ def create_app(
             db_path=resolved_db,
         )
 
+    sync_async_lock = asyncio.Lock()
+    sync_state: dict[str, Any] = {
+        "auto_sync_enabled": auto_sync_enabled,
+        "interval_sec": settings.kap_sync_interval_sec,
+        "lookback_days": settings.kap_sync_lookback_days,
+        "running": False,
+        "last_sync_at": None,
+        "last_sync_monotonic": 0.0,
+        "last_status": "idle",
+        "last_result": None,
+        "last_error": None,
+    }
+
+    async def execute_sync(app_instance: FastAPI) -> dict[str, Any]:
+        async with sync_async_lock:
+            sync_state["running"] = True
+            active_db = Path(getattr(app_instance.state, "db_path", resolved_db))
+            active_provider = getattr(app_instance.state, "llm_provider", None)
+            try:
+                result = await asyncio.to_thread(
+                    run_incremental_sync,
+                    settings=settings,
+                    db_path=active_db,
+                    provider=active_provider,
+                )
+                sync_state["last_sync_at"] = result.get("synced_at") or datetime.now(timezone.utc).isoformat()
+                sync_state["last_sync_monotonic"] = time.monotonic()
+                sync_state["last_status"] = "ok"
+                sync_state["last_result"] = result
+                sync_state["last_error"] = None
+            except Exception as exc:
+                sync_state["last_sync_at"] = datetime.now(timezone.utc).isoformat()
+                sync_state["last_sync_monotonic"] = time.monotonic()
+                sync_state["last_status"] = "error"
+                sync_state["last_error"] = str(exc)[:300]
+            finally:
+                sync_state["running"] = False
+            return public_sync_view()
+
+    def public_sync_view() -> dict[str, Any]:
+        return {
+            k: v for k, v in sync_state.items() if k != "last_sync_monotonic"
+        }
+
+    @asynccontextmanager
+    async def lifespan(app_instance: FastAPI):
+        bg_task: Optional[asyncio.Task[None]] = None
+        if auto_sync_enabled:
+            async def _sync_loop() -> None:
+                await asyncio.sleep(3)
+                while True:
+                    await execute_sync(app_instance)
+                    await asyncio.sleep(settings.kap_sync_interval_sec)
+
+            bg_task = asyncio.create_task(_sync_loop())
+        try:
+            yield
+        finally:
+            if bg_task is not None:
+                bg_task.cancel()
+                try:
+                    await bg_task
+                except asyncio.CancelledError:
+                    pass
+
     application = FastAPI(
         title="KAP Agent API",
         version="0.1.0",
         description="Structured BIST KAP disclosure analysis agent (read-only SQLite+FTS5).",
+        lifespan=lifespan,
     )
     application.state.db_path = resolved_db
     application.state.admin_token = admin_token or settings.admin_token
@@ -57,6 +138,7 @@ def create_app(
     application.state.quota_manager = ChatQuotaManager()
     application.state.global_api_hits = {}
     application.state.global_rate_limit_per_min = resolved_global_rpm
+    application.state.sync_state = sync_state
 
     @application.middleware("http")
     async def global_api_rate_limit_middleware(request: Request, call_next):
@@ -97,6 +179,25 @@ def create_app(
         allow_headers=["Content-Type", "X-Admin-Token"],
     )
 
+    @application.post("/api/sync")
+    async def trigger_kap_sync(request: Request) -> dict[str, Any]:
+        cooldown_sec = 60.0
+        elapsed = time.monotonic() - float(sync_state["last_sync_monotonic"] or 0.0)
+        if sync_state["last_sync_monotonic"] and elapsed < cooldown_sec:
+            return {
+                "triggered": False,
+                "cooldown_active": True,
+                "retry_after_sec": int(max(1, round(cooldown_sec - elapsed))),
+                "sync": public_sync_view(),
+            }
+        view = await execute_sync(request.app)
+        return {
+            "triggered": True,
+            "cooldown_active": False,
+            "retry_after_sec": 0,
+            "sync": view,
+        }
+
     @application.get("/api/health")
     def health_check(request: Request) -> dict[str, Any]:
         active_db = Path(getattr(request.app.state, "db_path", resolved_db))
@@ -110,6 +211,7 @@ def create_app(
         disclosures_count = 0
         low_conf_count = 0
         pending_reviews_count = 0
+        latest_disclosure_at: Optional[str] = None
         if active_db.exists():
             conn = get_write_conn(active_db)
             try:
@@ -126,6 +228,8 @@ def create_app(
                         "SELECT COUNT(*) FROM review_flags WHERE status = 'pending'"
                     ).fetchone()[0]
                 )
+                latest_row = conn.execute("SELECT MAX(published_at) FROM disclosures").fetchone()
+                latest_disclosure_at = str(latest_row[0]) if latest_row and latest_row[0] else None
             finally:
                 conn.close()
 
@@ -134,6 +238,7 @@ def create_app(
             "disclosures_count": disclosures_count,
             "low_confidence_count": low_conf_count,
             "pending_reviews_count": pending_reviews_count,
+            "latest_disclosure_at": latest_disclosure_at,
             "has_live_gemini": not is_offline,
             "is_offline_fallback": is_offline,
             "provider_model": getattr(provider, "last_used_model", provider.model_name),
@@ -151,6 +256,7 @@ def create_app(
                 "chat_global_day": quota_mgr.max_global_day,
                 "reviews_ip_min": 5,
             },
+            "sync": public_sync_view(),
         }
 
     application.include_router(chat_router)

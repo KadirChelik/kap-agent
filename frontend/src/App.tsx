@@ -1,5 +1,5 @@
 import { Fragment, useCallback, useEffect, useState, type FormEvent } from 'react';
-import { AlertTriangle, ArrowUpRight, Lock, Send } from 'lucide-react';
+import { AlertTriangle, ArrowUpRight, Lock, RefreshCw, Send } from 'lucide-react';
 import { AdminReviewDrawer } from './components/AdminReviewDrawer';
 import { DataVisualizer } from './components/DataVisualizer';
 import { FlagModal } from './components/FlagModal';
@@ -47,6 +47,7 @@ export default function App() {
     currentValue: unknown;
   } | null>(null);
   const [adminOpen, setAdminOpen] = useState(false);
+  const [syncing, setSyncing] = useState(false);
 
   const loadHealthAndLowConf = useCallback(async () => {
     try {
@@ -68,7 +69,22 @@ export default function App() {
 
   useEffect(() => {
     void loadHealthAndLowConf();
+    const timer = window.setInterval(() => {
+      void loadHealthAndLowConf();
+    }, 60_000);
+    return () => window.clearInterval(timer);
   }, [loadHealthAndLowConf]);
+
+  async function handleManualSync() {
+    if (syncing) return;
+    setSyncing(true);
+    try {
+      await fetch('/api/sync', { method: 'POST' });
+      await loadHealthAndLowConf();
+    } finally {
+      setSyncing(false);
+    }
+  }
 
   const openDisclosure = useCallback(async (disclosureId: string) => {
     setDrawerLoading(true);
@@ -213,9 +229,30 @@ export default function App() {
           <div className="flex flex-wrap items-center gap-2 text-[11px]">
             {health && (
               <span className="px-2.5 py-1 rounded border border-[#23262f] bg-[#12141a] text-[#9ca3af] font-mono tabular-nums">
-                {health.disclosures_count} bildirim · {health.low_confidence_count} düşük güven
+                {health.disclosures_count} bildirim
+                {health.latest_disclosure_at
+                  ? ` · Son: ${new Date(health.latest_disclosure_at).toLocaleDateString('tr-TR')}`
+                  : ''}
+                {` · ${health.low_confidence_count} düşük güven`}
               </span>
             )}
+            <button
+              type="button"
+              onClick={() => void handleManualSync()}
+              disabled={syncing || health?.sync?.running}
+              title={
+                health?.sync?.auto_sync_enabled
+                  ? `Otomatik KAP senkronizasyonu aktif (${Math.round((health.sync.interval_sec || 900) / 60)} dk)`
+                  : 'Yeni KAP bildirimlerini tara'
+              }
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded border border-[#282d39] bg-[#14171f] hover:border-teal-500/45 disabled:opacity-50 text-[#d1d5db] font-medium cursor-pointer transition-colors"
+            >
+              <RefreshCw
+                className={`w-3 h-3 text-teal-400 ${syncing || health?.sync?.running ? 'animate-spin' : ''}`}
+                aria-hidden="true"
+              />
+              <span>{syncing || health?.sync?.running ? 'Taranıyor...' : 'Güncelle'}</span>
+            </button>
             {activeQuota && (
               <span
                 className={`px-2.5 py-1 rounded border font-mono tabular-nums ${

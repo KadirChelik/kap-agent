@@ -89,6 +89,10 @@ class Settings:
     api_global_rate_limit_per_min: int
     admin_token: str
     kap_user_agent: str
+    kap_auto_sync_enabled: bool = True
+    kap_sync_interval_sec: int = 900
+    kap_sync_lookback_days: int = 14
+    kap_sync_limit_per_ticker: int = 5
     sql_timeout_ms: int = 1500
     sql_max_limit: int = 50
 
@@ -134,4 +138,9 @@ def get_settings() -> Settings:
             "KAP_USER_AGENT",
             "KAPAgentPortfolio/1.0 (+https://github.com/KadirChelik/kap-agent)",
         ).strip(),
+        kap_auto_sync_enabled=os.getenv("KAP_AUTO_SYNC_ENABLED", "true").strip().lower()
+        not in {"0", "false", "no", "off"},
+        kap_sync_interval_sec=max(60, _parse_int_env("KAP_SYNC_INTERVAL_SEC", 900)),
+        kap_sync_lookback_days=_parse_int_env("KAP_SYNC_LOOKBACK_DAYS", 14),
+        kap_sync_limit_per_ticker=_parse_int_env("KAP_SYNC_LIMIT_PER_TICKER", 5),
     )

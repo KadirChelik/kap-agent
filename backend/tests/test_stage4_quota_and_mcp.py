@@ -233,3 +233,124 @@ def test_global_api_rate_limit_middleware(tmp_path: Path) -> None:
     limited = client.get("/api/health")
     assert limited.status_code == 429
     assert limited.headers.get("retry-after") == "60"
+
+
+def test_incremental_kap_sync_and_api_endpoint(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    from app.pipeline.sync import run_incremental_sync
+
+    db_path = tmp_path / "sync_test.db"
+    raw_dir = tmp_path / "raw"
+    ext_dir = tmp_path / "extractions"
+
+    class MockExtractor(LLMProvider):
+        model_name = "mock-gemini-sync"
+        is_offline_fallback = False
+
+        def __init__(self) -> None:
+            self.calls = 0
+
+        def generate_structured(self, *, system_prompt: str, user_prompt: str, schema_cls: type[TModel]) -> TModel:
+            self.calls += 1
+            return schema_cls.model_validate(
+                {
+                    "decision_status": "approved",
+                    "fiscal_year": 2026,
+                    "gross_cash_per_share_try": 8.0,
+                    "net_cash_per_share_try": 6.8,
+                    "payment_type": "single",
+                    "evidence_quote": "1 TL nominal değerli paya net 6,80 TL nakit kar payı ödenmesine karar verilmiştir.",
+                }
+            )
+
+    def kap_handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path.endswith("/tr/api/company/items/BIST/A"):
+            return httpx.Response(
+                200,
+                json=[{"stockCodes": "FROTO", "memberOid": "oid-froto", "memberTitle": "Ford Otomotiv Sanayi A.Ş."}],
+            )
+        if request.url.path.endswith("/tr/api/disclosure/members/byCriteria"):
+            return httpx.Response(
+                200,
+                json=[
+                    {
+                        "disclosureIndex": 1700999,
+                        "subject": "Kar Payı Dağıtım İşlemlerine İlişkin Bildirim",
+                        "memberTitle": "Ford Otomotiv Sanayi A.Ş.",
+                        "publishDate": "19.11.2026 18:10:00",
+                    }
+                ],
+            )
+        if request.url.path.endswith("/Bildirim/1700999"):
+            return httpx.Response(
+                200,
+                text="<html><body><p>1 TL nominal değerli paya net 6,80 TL nakit kar payı ödenmesine karar verilmiştir.</p></body></html>",
+            )
+        return httpx.Response(404)
+
+    provider = MockExtractor()
+    transport = httpx.MockTransport(kap_handler)
+    with httpx.Client(transport=transport) as http_client:
+        res1 = run_incremental_sync(
+            tickers=["FROTO"],
+            start_date="2026-11-01",
+            end_date="2026-11-19",
+            limit_per_ticker=5,
+            delay_sec=0.0,
+            db_path=db_path,
+            raw_dir=raw_dir,
+            extractions_dir=ext_dir,
+            provider=provider,
+            client=http_client,
+        )
+        assert res1["fetched"] == 1
+        assert res1["extracted"] == 1
+        assert res1["loaded_to_db"] == 1
+        assert provider.calls == 1
+
+        # Second incremental tick sees cached raw + existing DB row -> zero LLM calls, zero writes
+        res2 = run_incremental_sync(
+            tickers=["FROTO"],
+            start_date="2026-11-01",
+            end_date="2026-11-19",
+            limit_per_ticker=5,
+            delay_sec=0.0,
+            db_path=db_path,
+            raw_dir=raw_dir,
+            extractions_dir=ext_dir,
+            provider=provider,
+            client=http_client,
+        )
+        assert res2["fetched"] == 0
+        assert res2["extracted"] == 0
+        assert res2["loaded_to_db"] == 0
+        assert provider.calls == 1
+
+    # Verify /api/sync + cooldown + /api/health latest_disclosure_at
+    monkeypatch.setattr(
+        "app.main.run_incremental_sync",
+        lambda **_: {
+            "synced_at": "2026-11-19T18:30:00+00:00",
+            "fetched": 0,
+            "cached_raw": 1,
+            "fetch_errors": 0,
+            "extracted": 0,
+            "failed_extractions": 0,
+            "loaded_to_db": 0,
+        },
+    )
+    app = create_app(db_path=db_path, admin_token="admin", enable_auto_sync=False)
+    api_client = TestClient(app)
+
+    health = api_client.get("/api/health").json()
+    assert health["disclosures_count"] == 1
+    assert health["latest_disclosure_at"].startswith("2026-11-19")
+    assert health["sync"]["auto_sync_enabled"] is False
+
+    first_sync = api_client.post("/api/sync").json()
+    assert first_sync["triggered"] is True
+    assert first_sync["cooldown_active"] is False
+
+    second_sync = api_client.post("/api/sync").json()
+    assert second_sync["triggered"] is False
+    assert second_sync["cooldown_active"] is True
+    assert second_sync["retry_after_sec"] >= 1
