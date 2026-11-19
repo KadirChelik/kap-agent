@@ -9,8 +9,8 @@
 KAP Agent, halüsinasyon riskini ve API maliyetini düşürmek için **Çevrimdışı Yapılandırılmış Çıkarım** ile **Çevrimiçi Salt-Okunur Ajan Çalışma Zamanı**nı birbirinden ayırır:
 
 1. **Çevrimdışı Veri & Çıkarım Hattı (`backend/app/pipeline/`)**:
-   - **Kibar CLI Çekici (`fetcher.py`):** İstekler arası gecikme (`--delay-sec 2.5` + jitter), yerel disk önbelleği (`data/raw/`), özel `User-Agent` ve V1 banka hariç tutma filtresi uygular.
-   - **Pydantic v2 Çıkarıcı (`extractor.py`):** 3 bildirim türü (`dividend`, `financial_report`, `material_event`) için **bildirim başına 1 kez** SHA-256 içerik özetiyle önbellekli JSON çıkarımı yapar; `LLMProvider` arayüzü sayesinde model kolayca değiştirilebilir.
+   - **Kibar CLI Çekici (`fetcher.py`):** 85 günlük dönem parçalaması, `byCriteria` ve bildirim istekleri arası gecikme + jitter, yerel disk önbelleği (`data/raw/`), özel `User-Agent` ve V1 banka hariç tutma filtresi uygular.
+   - **Pydantic v2 Çıkarıcı (`extractor.py`) ve Çoklu Sağlayıcı Zinciri (`backend/app/llm/`):** 3 bildirim türü (`dividend`, `financial_report`, `material_event`) için **bildirim başına 1 kez** SHA-256 içerik özetiyle önbellekli JSON çıkarımı yapar. `prepare_extraction_text` ile büyük XBRL HTML raporlarını (`150+ KB`) gürültüden arındırarak `25.000` karakter sınırı içinde gelir tablosu/bilanço özetini korur. `FallbackChainProvider` giden hız sınırlaması (`llm_min_interval_sec`) ve `429 Retry-After` beklemesiyle `Gemini -> Groq -> OpenRouter` arasında otomatik geçiş yapar.
    - **SQLite + FTS5 (`schema.sql`, `connection.py`):** Tam metin arama (`unicode61 remove_diacritics 2`) ve ilişkisel tablolar (`disclosures`, `dividend_events`, `financial_reports`, `material_events`) tutar.
 
 2. **Çevrimiçi Ajan Runtime & Güvenlik Katmanı (`backend/app/agent/`)**:
@@ -21,25 +21,24 @@ KAP Agent, halüsinasyon riskini ve API maliyetini düşürmek için **Çevrimd�
 
 3. **Kullanıcı Düzeltme Kuyruğu & Kota Koruması (`backend/app/api/`)**:
    - **`review_flags` + Admin Onayı (`routes_reviews.py`):** Arayüzden gelen düzeltme önerileri HTML/script temizliği ve IP rate-limit sonrası `status = 'pending'` olarak kuyruğa alınır; ana tablolar yalnızca `X-Admin-Token` doğrulamalı admin kararıyla güncellenir.
-   - **Kota Koruması (`quota_guard.py`):** Sorgu önbelleği, IP/günlük limitler ve limit dolduğunda örnek sorular için sıfır maliyetli **Demo Modu** içerir.
+   - **Kota ve Hız Koruması (`quota_guard.py`, `main.py`):** Sorgu önbelleği, `/api/*` için IP başına global `60/dk` sliding-window rate-limit middleware'i (`429 Retry-After`), günlük limitler ve örnek sorular için sıfır maliyetli **Demo Modu** içerir.
 
 4. **İnce MCP Server Katmanı (`backend/app/mcp/server.py`)**:
    - Aynı salt-okunur `search_disclosures`, `get_disclosure` ve `run_sql` araçlarını stdio JSON-RPC 2.0 MCP sunucusu olarak Claude Code, Antigravity veya Claude Desktop'a açar.
 
 ---
 
-## Veri Kaynağı Şeffaflığı ve Eval Sonuçları
+## Veri Kaynağı Şeffaflığı ve Canlı Eval Sonuçları
 
-- Repodaki `data/sample_seed/` (24 bildirim: 8 temettü, 8 finansal rapor, 8 özel durum) kurulumsuz test ve CI doğrulaması için üretilmiş **sentetik test verisidir** (`SYNTHETIC_SAMPLE_SEED`).
-- `evals/extraction_gold.jsonl` (50 vaka) ve `evals/agent_gold.jsonl` (30 soru) dosyalarındaki tüm taslak kayıtlar `"verified": false` olarak başlar.
-- Değerlendirme betikleri **yalnızca `"verified": true` işaretli kayıtlar üzerinden** doğruluk yüzdesi hesaplar; doğrulanmamış kayıtlarda **`"ölçülmedi"`**, API anahtarsız koşullarda ise açıkça **`OFFLINE/SAHTE`** yazar.
+- Repodaki `data/sample_seed/` (24 bildirim: 8 temettü, 8 finansal rapor, 8 özel durum) kurulumsuz unit test ve CI doğrulaması için deterministik test verisi olarak korunur (`SYNTHETIC_SAMPLE_SEED`).
+- Yerel üretim veritabanı (`data/kap_agent.db`, `.gitignore` altında) BIST 30'daki 18 banka dışı şirketten `fetcher.py` ile çekilmiş **102 gerçek KAP bildirimi** içerir (`7` temettü/avans, `19` finansal/faaliyet/sorumluluk bildirimi, `76` özel durum açıklaması).
+- `evals/extraction_gold.jsonl` (50 gerçek bildirim) ve `evals/agent_gold.jsonl` (30 gerçek soru) kayıtları canlı `https://www.kap.org.tr/tr/Bildirim/<ID>` sayfalarıyla (`51/51 HTTP 200 OK`) karşılaştırılıp doğrulanarak **`"verified": true`** işaretlenmiştir.
+- Değerlendirme betikleri **yalnızca `"verified": true` kayıtlar üzerinden** metrik hesaplar; API anahtarı olmayan/offline koşullarda çalıştırıldığında **`OFFLINE/SAHTE`** uyarısı basar.
 
-| Eval Paketi | Doğrulanmış (`verified: true`) | Ölçüm Modu | Sonuç (İlk Kurulum / Taslak) |
+| Eval Paketi | Doğrulanmış (`verified: true`) | Ölçüm Modu (`--live`) | Ölçülen Gerçek Sonuçlar |
 | --- | --- | --- | --- |
-| Çıkarım Eval (`evals/run_extraction_eval.py`, 50 vaka) | 0 / 50 | `OFFLINE/SAHTE` | `ölçülmedi` (50/50 şema geçerli) |
-| Agent Eval (`evals/run_agent_eval.py`, 30 soru) | 0 / 30 | `OFFLINE/SAHTE` | `ölçülmedi` (30/30 çökmeden çalıştı) |
-
-*(Yerelde gerçek KAP verisi ve `GEMINI_API_KEY` ile `verified: true` doğrulaması yapıldıktan sonra gerçek Before / After değerleri `--live` çıktısıyla güncellenir.)*
+| Çıkarım Eval (`evals/run_extraction_eval.py`) | 50 / 50 | `LIVE_LLM (gemini-3-flash-preview)` | Şema Geçerliliği `%100.0` · Alan Eşleşmesi `%93.84` (`financial_report` `%99.12`, `dividend` `%92.86`, `material_event` `%89.17`) · Sayısal Doğruluk `%92.31` *(XBRL ön-işleme öncesi `%82.05`)* |
+| Agent Eval (`evals/run_agent_eval.py`) | 30 / 30 | `LIVE_LLM (gemini-3-flash-preview)` | İlk Denemede SQL `%95.83` (ort. tekrar `0.03`) · Citation Precision `%100.0` / Recall `%100.0` · Tavsiye Reddi `%100.0` · Cevap Eşleşmesi `%90.0` (`p50: 24,095.89 ms`) |
 
 ---
 
@@ -56,7 +55,7 @@ KAP Agent, halüsinasyon riskini ve API maliyetini düşürmek için **Çevrimd�
 ### 1. Ortam Değişkenleri ve Backend (FastAPI)
 ```powershell
 Copy-Item .env.example .env
-# .env içine Google AI Studio GEMINI_API_KEY değerinizi ekleyin
+# .env içine GEMINI_API_KEY (ve isteğe bağlı yedek GROQ_API_KEY / OPENROUTER_API_KEY) ekleyin
 
 cd backend
 python -m pip install -e . pytest
