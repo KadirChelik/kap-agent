@@ -84,6 +84,29 @@ def _normalize_whitespace(text: str) -> str:
     return " ".join(text.lower().split())
 
 
+def _is_financial_cover_notice(raw: RawDisclosure, extracted: FinancialReportExtraction) -> bool:
+    """Return True for KAP FR cover/attestation notices that carry no numeric HTML tables."""
+    title_low = raw.title.lower()
+    cover_markers = (
+        "sorumluluk beyanı",
+        "faaliyet raporu",
+        "ek süre",
+        "dipnot değişikliği",
+        "bölünme",
+    )
+    if any(tok in title_low for tok in cover_markers):
+        return True
+    if (
+        "özel durum" in title_low
+        and extracted.revenue_try is None
+        and extracted.net_profit_try is None
+        and extracted.total_assets_try is None
+        and "finansal durum tablosu" not in raw.raw_text.lower()
+    ):
+        return True
+    return False
+
+
 def assess_extraction_quality(
     raw: RawDisclosure,
     extracted: ExtractionPayload,
@@ -116,14 +139,21 @@ def assess_extraction_quality(
             f"{extracted.net_cash_per_share_try or 0:.3f} TL."
         )
     elif isinstance(extracted, FinancialReportExtraction):
-        for field_name in ("revenue_try", "net_profit_try", "total_assets_try"):
-            if getattr(extracted, field_name) is None:
-                score -= 0.10
-                low_fields.append(field_name)
-        summary = (
-            f"{raw.ticker} {extracted.period} ({extracted.consolidation}) finansal sonuç: "
-            f"hasılat={extracted.revenue_try or 'N/A'}, net kâr={extracted.net_profit_try or 'N/A'}."
-        )
+        if _is_financial_cover_notice(raw, extracted):
+            score -= 0.04
+            summary = (
+                f"{raw.ticker} {extracted.period} ({extracted.consolidation}) "
+                f"{raw.title[:80]} (sayısal tablo PDF ekinde)."
+            )
+        else:
+            for field_name in ("revenue_try", "net_profit_try", "total_assets_try"):
+                if getattr(extracted, field_name) is None:
+                    score -= 0.10
+                    low_fields.append(field_name)
+            summary = (
+                f"{raw.ticker} {extracted.period} ({extracted.consolidation}) finansal sonuç: "
+                f"hasılat={extracted.revenue_try or 'N/A'}, net kâr={extracted.net_profit_try or 'N/A'}."
+            )
     else:
         if extracted.event_category == "new_business_contract":
             if extracted.contract_amount_original is None:

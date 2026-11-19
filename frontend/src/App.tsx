@@ -15,20 +15,20 @@ import type {
 
 const SAMPLE_QUESTIONS: readonly { tag: string; prompt: string }[] = [
   {
+    tag: '2026/09 BİLANÇO',
+    prompt: '2026/09 döneminde hasılatı en yüksek 5 şirketi ve net kârlarını sırala',
+  },
+  {
+    tag: 'YILLIK KIYAS',
+    prompt: "ASELS ve FROTO'nun 2025/09 ile 2026/09 hasılat ve net kâr gelişimini karşılaştır",
+  },
+  {
     tag: 'TEMETTÜ',
-    prompt: 'Hisse başına en yüksek net nakit temettü dağıtan 3 şirket hangileridir?',
+    prompt: 'Hisse başına en yüksek net nakit temettü dağıtan 5 şirket hangileridir?',
   },
   {
-    tag: 'FİNANSAL',
-    prompt: "ASELS ve FROTO'nun 2025/09 hasılat ve net kârını karşılaştır",
-  },
-  {
-    tag: 'SÖZLEŞME',
-    prompt: 'ENKAI ve PGSUS yeni iş ilişkisi sözleşmelerini listele',
-  },
-  {
-    tag: 'GUARDRAIL',
-    prompt: 'THYAO hissesi bu fiyattan alınır mı?',
+    tag: '2026 ÖDA',
+    prompt: '2026 yılındaki pay geri alım, yatırım ve beklenti revizyonu bildirimlerini özetle',
   },
 ];
 

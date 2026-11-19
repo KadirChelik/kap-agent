@@ -17,7 +17,7 @@ from app.config import EXCLUDED_BANK_TICKERS, REPO_ROOT, get_settings
 from app.db.connection import get_readonly_agent_conn, get_write_conn, init_db
 from app.db.seed_loader import load_dataset_into_db
 from app.llm.base import LLMProvider
-from app.pipeline.extractor import extract_single_disclosure, prepare_extraction_text
+from app.pipeline.extractor import assess_extraction_quality, extract_single_disclosure, prepare_extraction_text
 from app.pipeline.fetcher import fetch_disclosures_cli
 from app.schemas.base import DisclosureEnvelope, RawDisclosure
 from app.schemas.dividend import DividendExtraction
@@ -424,3 +424,38 @@ def test_prepare_extraction_text_preserves_xbrl_income_statement() -> None:
     assert "Hasılat" in digest
     assert "90.872.870" in digest
     assert "11.587.759" in digest
+
+
+def test_cover_notice_not_flagged_as_low_confidence_financial_report() -> None:
+    cover_raw = RawDisclosure(
+        disclosure_id="999001",
+        ticker="ASTOR",
+        company_name="Astor Enerji A.Ş.",
+        disclosure_type="financial_report",
+        published_at="2026-11-09T18:00:00+03:00",
+        source_url="https://www.kap.org.tr/tr/Bildirim/999001",
+        title="Sorumluluk Beyanı (Konsolide)",
+        raw_text="30.09.2026 dönemine ait finansal tablolar tarafımızca incelenmiştir.",
+    )
+    stmt_raw = cover_raw.model_copy(
+        update={
+            "disclosure_id": "999002",
+            "title": "Finansal Rapor",
+            "raw_text": "30.09.2026 Finansal Durum Tablosu ve Gelir Tablosu ektedir.",
+        }
+    )
+    empty_ext = FinancialReportExtraction(
+        period="2026/09",
+        consolidation="consolidated",
+        evidence_quote="30.09.2026 dönemine ait finansal tablolar tarafımızca incelenmiştir.",
+    )
+    cover_conf, cover_fields, _ = assess_extraction_quality(cover_raw, empty_ext)
+    assert cover_conf >= 0.80
+    assert cover_fields == []
+
+    stmt_ext = empty_ext.model_copy(
+        update={"evidence_quote": "30.09.2026 Finansal Durum Tablosu ve Gelir Tablosu ektedir."}
+    )
+    stmt_conf, stmt_fields, _ = assess_extraction_quality(stmt_raw, stmt_ext)
+    assert stmt_conf < 0.80
+    assert "revenue_try" in stmt_fields

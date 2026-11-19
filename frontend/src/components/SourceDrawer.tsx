@@ -90,7 +90,7 @@ export function SourceDrawer({
             atıflarına tıklayarak orijinal KAP metnini ve çıkarılan alanları burada inceleyebilirsiniz.
           </p>
 
-          {lowConfItems.length > 0 && (
+          {lowConfItems.length > 0 ? (
             <div className="space-y-2 pt-2 border-t border-[#1e222b]">
               <div className="flex items-center justify-between text-[11px]">
                 <span className="font-medium text-amber-300/90">
@@ -100,6 +100,9 @@ export function SourceDrawer({
                   {lowConfItems.length} kayıt
                 </span>
               </div>
+              <p className="text-[11px] text-[#6b7280] leading-snug">
+                Sözleşme tutarı, tarih veya kaynak alıntısı eksik kalan kayıtlar aşağıda listelenir; alan bazlı düzeltme önerebilirsiniz.
+              </p>
               <div className="divide-y divide-[#1e222b] rounded-md border border-[#23262f] bg-[#0e1015]">
                 {lowConfItems.map((item) => (
                   <button
@@ -117,7 +120,7 @@ export function SourceDrawer({
                           kap:{item.disclosure_id}
                         </span>
                       </div>
-                      <p className="text-[11px] text-[#6b7280] truncate mt-0.5">{item.title}</p>
+                      <p className="text-[11px] text-[#6b7280] truncate mt-0.5">{item.summary_tr}</p>
                     </div>
                     <span className="shrink-0 font-mono text-[11px] text-amber-300/90 tabular-nums">
                       %{Math.round(item.extraction_confidence * 100)}
@@ -125,6 +128,10 @@ export function SourceDrawer({
                   </button>
                 ))}
               </div>
+            </div>
+          ) : (
+            <div className="pt-2 border-t border-[#1e222b] text-[11px] text-[#6b7280]">
+              Düşük güvenli olarak işaretlenmiş eksik çıkarım bulunmuyor.
             </div>
           )}
         </div>
