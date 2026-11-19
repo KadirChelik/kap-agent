@@ -28,7 +28,7 @@ if str(BACKEND_DIR) not in sys.path:
 
 from app.llm.base import LLMProvider  # noqa: E402
 from app.llm.gemini import OfflineFallbackProvider, get_extraction_provider  # noqa: E402
-from app.pipeline.extractor import SCHEMA_BY_TYPE  # noqa: E402
+from app.pipeline.extractor import SCHEMA_BY_TYPE, _build_extraction_prompts  # noqa: E402
 from app.schemas.base import DisclosureEnvelope, RawDisclosure  # noqa: E402
 
 GOLD_PATH = REPO_ROOT / "evals" / "extraction_gold.jsonl"
@@ -78,9 +78,14 @@ def _extract_record_dict(
         }
     )
     schema_cls = SCHEMA_BY_TYPE[dtype]
+    if getattr(provider, "is_offline_fallback", False):
+        sys_prompt = "KAP bildiriminden yapılandırılmış alanları çıkar."
+        usr_prompt = raw.raw_text
+    else:
+        sys_prompt, usr_prompt = _build_extraction_prompts(raw)
     extracted = provider.generate_structured(
-        system_prompt="KAP bildiriminden yapılandırılmış alanları çıkar.",
-        user_prompt=raw.raw_text,
+        system_prompt=sys_prompt,
+        user_prompt=usr_prompt,
         schema_cls=schema_cls,
     )
     return extracted.model_dump()

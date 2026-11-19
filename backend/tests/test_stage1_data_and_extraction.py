@@ -17,7 +17,7 @@ from app.config import EXCLUDED_BANK_TICKERS, REPO_ROOT, get_settings
 from app.db.connection import get_readonly_agent_conn, get_write_conn, init_db
 from app.db.seed_loader import load_dataset_into_db
 from app.llm.base import LLMProvider
-from app.pipeline.extractor import extract_single_disclosure
+from app.pipeline.extractor import extract_single_disclosure, prepare_extraction_text
 from app.pipeline.fetcher import fetch_disclosures_cli
 from app.schemas.base import DisclosureEnvelope, RawDisclosure
 from app.schemas.dividend import DividendExtraction
@@ -404,3 +404,23 @@ def test_extraction_eval_counts_only_verified_records(tmp_path: Path) -> None:
     assert report["schema_validity_pct"] == 100.0
     assert report["field_exact_match_pct"] == 100.0
     assert report["execution_mode"] == "LIVE_LLM (mock-live-gemini)"
+
+
+def test_prepare_extraction_text_preserves_xbrl_income_statement() -> None:
+    filler = "\n".join(
+        [f"ifrs-full_AssetLine{i}|http://www.xbrl.org/2003/role/label\nKalem {i}\n123.456" for i in range(900)]
+    )
+    oversized = (
+        "Şirket X\nSunum Para Birimi\n1.000 TL\nKonsolide\n"
+        f"{filler}\n"
+        "TOPLAM VARLIKLAR\n500.000.000\n"
+        "KAR VEYA ZARAR KISMI\nHasılat\n90.872.870\nDÖNEM KARI (ZARARI)\n11.587.759\n"
+    )
+    assert len(oversized) > 25000
+    digest = prepare_extraction_text(oversized, max_chars=25000)
+    assert len(digest) <= 25000
+    assert "1.000 TL" in digest
+    assert "TOPLAM VARLIKLAR" in digest
+    assert "Hasılat" in digest
+    assert "90.872.870" in digest
+    assert "11.587.759" in digest

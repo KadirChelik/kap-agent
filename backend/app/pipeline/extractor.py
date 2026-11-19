@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -36,6 +37,49 @@ def compute_content_sha256(raw: RawDisclosure) -> str:
     return hashlib.sha256(payload).hexdigest()
 
 
+_XBRL_TAG_LINE_RE = re.compile(r"^[A-Za-z0-9_-]+\|(?:https?://\S*)?$")
+
+
+def prepare_extraction_text(raw_text: str, max_chars: int = 25000) -> str:
+    """
+    Condense oversized XBRL/HTML KAP disclosures while keeping header metadata,
+    balance-sheet totals, and income statement lines intact within `max_chars`.
+    """
+    if len(raw_text) <= max_chars:
+        return raw_text
+
+    cleaned_lines = [
+        line.strip()
+        for line in raw_text.splitlines()
+        if line.strip() and not _XBRL_TAG_LINE_RE.match(line.strip())
+    ]
+    cleaned = "\n".join(cleaned_lines)
+    if len(cleaned) <= max_chars:
+        return cleaned
+
+    head_end = min(len(cleaned), 4000)
+    sections = [cleaned[:head_end]]
+    prev_end = head_end
+    anchors = (
+        ("TOPLAM VARLIKLAR", -200, 1200),
+        ("TOPLAM ÖZKAYNAKLAR", -200, 1000),
+        ("KAR VEYA ZARAR KISMI", -600, 11000),
+    )
+    for marker, back, fwd in anchors:
+        idx = cleaned.find(marker)
+        if idx == -1 and marker == "KAR VEYA ZARAR KISMI":
+            idx = cleaned.find("Hasılat")
+        if idx == -1:
+            continue
+        start = max(prev_end, idx + back)
+        end = min(len(cleaned), idx + fwd)
+        if end > start:
+            sections.append(f"...\n{cleaned[start:end]}")
+            prev_end = end
+
+    return "\n".join(sections)[:max_chars]
+
+
 def _normalize_whitespace(text: str) -> str:
     return " ".join(text.lower().split())
 
@@ -49,8 +93,9 @@ def assess_extraction_quality(
     low_fields: list[str] = []
 
     raw_norm = _normalize_whitespace(raw.raw_text)
+    prepared_norm = _normalize_whitespace(prepare_extraction_text(raw.raw_text))
     quote_norm = _normalize_whitespace(extracted.evidence_quote)
-    if len(quote_norm) < 8 or quote_norm[:32] not in raw_norm:
+    if len(quote_norm) < 8 or (quote_norm[:32] not in raw_norm and quote_norm[:32] not in prepared_norm):
         score -= 0.14
         low_fields.append("evidence_quote")
 
@@ -102,15 +147,20 @@ def _build_extraction_prompts(raw: RawDisclosure) -> tuple[str, str]:
         "yapılandırılmış veri çıkaran bir finansal veri ayrıştırma motorusun. "
         "Metinde açıkça geçmeyen hiçbir sayıyı uydurma; bulunmayan alanlara null ver. "
         "Finansal raporlarda tüm parasal büyüklükleri tam TL değerine (full TRY) çevir "
-        "(ör. tablo 'Milyon TL' ise değerleri 1.000.000 ile çarp, 'Bin TL' ise 1.000 ile çarp) "
-        "ve presentation_scale alanına orijinal tablo ölçeğini yaz."
+        "(ör. Sunum Para Birimi '1.000 TL' veya 'Bin TL' ise 1.000 ile, 'Milyon TL' ise 1.000.000 ile çarp) "
+        "ve presentation_scale alanına orijinal tablo ölçeğini yaz; Cari Dönem sütununu kullan ve "
+        "net_profit_try için 'DÖNEM KARI (ZARARI)' satırını al. "
+        "Özel durumlarda (Payların Geri Alınması) tamamlanan işlemlerde 'Geri Alımın Maliyeti (TL)', "
+        "devam eden programlarda 'Ödenecek Azami Tutar (TL)' veya ayrılan fon tutarını "
+        "contract_amount_original ve contract_currency='TRY' olarak yaz."
     )
+    prepared_text = prepare_extraction_text(raw.raw_text, max_chars=25000)
     user_prompt = (
         f"Şirket: {raw.ticker} ({raw.company_name})\n"
         f"Tür: {raw.disclosure_type}\n"
         f"Tarih: {raw.published_at.isoformat()}\n"
         f"Başlık: {raw.title}\n\n"
-        f"Bildirim Metni:\n{raw.raw_text[:25000]}"
+        f"Bildirim Metni:\n{prepared_text}"
     )
     return system_prompt, user_prompt
 
