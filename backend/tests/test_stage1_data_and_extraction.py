@@ -291,22 +291,34 @@ def test_sample_seed_fts5_and_readonly_agent_connection(tmp_path: Path) -> None:
         ro_conn.close()
 
 
-def test_extraction_eval_draft_runner() -> None:
+def test_extraction_eval_draft_runner(tmp_path: Path) -> None:
     evals_dir = REPO_ROOT / "evals"
     if str(evals_dir) not in sys.path:
         sys.path.insert(0, str(evals_dir))
     import run_extraction_eval  # type: ignore
 
+    # Full 50-case verified gold set runs in OFFLINE/SAHTE mode cleanly
     report = run_extraction_eval.run_eval(use_live_llm=False)
     assert report["total_cases"] == 50
-    assert report["verified_cases"] == 0
-    assert report["unverified_draft_cases"] == 50
-    assert report["schema_validity_pct"] == "ölçülmedi"
-    assert report["field_exact_match_pct"] == "ölçülmedi"
-    assert report["numeric_accuracy_pct"] == "ölçülmedi"
+    assert report["verified_cases"] == 50
+    assert report["unverified_draft_cases"] == 0
+    assert report["schema_validity_pct"] == 100.0
     assert "OFFLINE/SAHTE" in report["execution_mode"]
-    assert report["unverified_draft_report"]["count"] == 50
-    assert report["unverified_draft_report"]["schema_valid_count"] == 50
+
+    # When 0 verified cases exist, accuracy MUST remain "ölçülmedi"
+    unverified_draft = tmp_path / "unverified_ext.jsonl"
+    first_row = json.loads(
+        (REPO_ROOT / "evals" / "extraction_gold.jsonl").read_text(encoding="utf-8").splitlines()[0]
+    )
+    first_row["verified"] = False
+    unverified_draft.write_text(json.dumps(first_row, ensure_ascii=False) + "\n", encoding="utf-8")
+    draft_report = run_extraction_eval.run_eval(use_live_llm=False, gold_path=unverified_draft)
+    assert draft_report["verified_cases"] == 0
+    assert draft_report["unverified_draft_cases"] == 1
+    assert draft_report["schema_validity_pct"] == "ölçülmedi"
+    assert draft_report["field_exact_match_pct"] == "ölçülmedi"
+    assert draft_report["numeric_accuracy_pct"] == "ölçülmedi"
+    assert draft_report["unverified_draft_report"]["schema_valid_count"] == 1
 
 
 def test_extraction_eval_counts_only_verified_records(tmp_path: Path) -> None:

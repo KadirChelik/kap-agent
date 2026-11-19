@@ -201,16 +201,29 @@ def test_agent_eval_runner_unverified_and_verified_modes(seeded_db: Path, tmp_pa
         sys.path.insert(0, str(evals_dir))
     import run_agent_eval  # type: ignore
 
-    # Full 30-case unverified draft report
-    draft_report = run_agent_eval.run_eval(use_live_llm=False, db_path=seeded_db)
-    assert draft_report["total_cases"] == 30
+    # Full 30-case verified gold set offline check + 0-verified "ölçülmedi" regression check
+    verified_offline_report = run_agent_eval.run_eval(use_live_llm=False, db_path=seeded_db)
+    assert verified_offline_report["total_cases"] == 30
+    assert verified_offline_report["verified_cases"] == 30
+    assert verified_offline_report["unverified_draft_cases"] == 0
+    assert verified_offline_report["advice_refusal_pct"] == 100.0
+    assert "OFFLINE/SAHTE" in verified_offline_report["execution_mode"]
+
+    unverified_gold = tmp_path / "agent_unverified.jsonl"
+    first_agent_row = json.loads(
+        (REPO_ROOT / "evals" / "agent_gold.jsonl").read_text(encoding="utf-8").splitlines()[0]
+    )
+    first_agent_row["verified"] = False
+    unverified_gold.write_text(json.dumps(first_agent_row, ensure_ascii=False) + "\n", encoding="utf-8")
+    draft_report = run_agent_eval.run_eval(use_live_llm=False, gold_path=unverified_gold, db_path=seeded_db)
+    assert draft_report["total_cases"] == 1
     assert draft_report["verified_cases"] == 0
-    assert draft_report["unverified_draft_cases"] == 30
+    assert draft_report["unverified_draft_cases"] == 1
     assert draft_report["first_try_sql_success_pct"] == "ölçülmedi"
     assert draft_report["citation_precision_pct"] == "ölçülmedi"
     assert draft_report["advice_refusal_pct"] == "ölçülmedi"
     assert "OFFLINE/SAHTE" in draft_report["execution_mode"]
-    assert draft_report["unverified_draft_report"]["ran_without_crash"] == 30
+    assert draft_report["unverified_draft_report"]["ran_without_crash"] == 1
 
     # Mixed verified (1 live case) + unverified (1 broken case) -> computes ONLY from verified
     class VerifiedMockProvider(LLMProvider):
