@@ -33,6 +33,7 @@ from app.schemas.base import DisclosureEnvelope, RawDisclosure  # noqa: E402
 
 GOLD_PATH = REPO_ROOT / "evals" / "extraction_gold.jsonl"
 SAMPLE_EXTRACTIONS_DIR = REPO_ROOT / "data" / "sample_seed" / "extractions"
+LIVE_EXTRACTIONS_DIR = REPO_ROOT / "data" / "extractions"
 
 
 def _values_match(expected: Any, actual: Any) -> bool:
@@ -57,10 +58,11 @@ def _extract_record_dict(
 ) -> dict[str, Any]:
     disc_id = rec["disclosure_id"]
     dtype = rec["disclosure_type"]
-    ext_path = sample_extractions_dir / f"{disc_id}.json"
-    if not use_live_llm and ext_path.exists():
-        env = DisclosureEnvelope.model_validate_json(ext_path.read_text(encoding="utf-8"))
-        return env.extracted.model_dump()
+    for cache_dir in (LIVE_EXTRACTIONS_DIR, sample_extractions_dir):
+        ext_path = cache_dir / f"{disc_id}.json"
+        if not use_live_llm and ext_path.exists():
+            env = DisclosureEnvelope.model_validate_json(ext_path.read_text(encoding="utf-8"))
+            return env.extracted.model_dump()
 
     raw = RawDisclosure.model_validate(
         {
