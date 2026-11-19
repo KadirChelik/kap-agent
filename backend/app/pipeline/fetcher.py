@@ -269,6 +269,9 @@ def fetch_disclosures_cli(
                 if processed_for_ticker >= limit_per_ticker:
                     break
 
+                if delay_sec > 0:
+                    time.sleep(min(delay_sec * 0.5, 1.2) + random.uniform(0.1, 0.4))
+
                 payload = _build_by_criteria_payload(entry["oid"], win_start, win_end)
                 try:
                     list_resp = http.post(KAP_MEMBERS_QUERY_URL, json=payload, headers=headers)
@@ -419,17 +422,31 @@ def build_gold_draft_from_dir(
     """
     Generate an unverified (`"verified": false`) extraction_gold.jsonl draft from
     fetched disclosures and cached extractions so a human reviewer can verify it.
+    Prioritizes type diversity (dividends, financial reports, categorized/valued
+    material events) before general material events.
     """
-    rows: list[dict[str, Any]] = []
+    candidates: list[tuple[tuple[int, int, str], RawDisclosure, dict[str, Any]]] = []
     for raw_file in sorted(Path(raw_dir).glob("*.json")):
-        if len(rows) >= max_cases:
-            break
         ext_file = Path(extractions_dir) / raw_file.name
         if not ext_file.exists():
             continue
         raw = RawDisclosure.model_validate_json(raw_file.read_text(encoding="utf-8"))
         env = DisclosureEnvelope.model_validate_json(ext_file.read_text(encoding="utf-8"))
         ext_dict = env.extracted.model_dump()
+        if raw.disclosure_type == "dividend":
+            priority = (0, 0, raw.disclosure_id)
+        elif raw.disclosure_type == "financial_report":
+            priority = (1, 0, raw.disclosure_id)
+        else:
+            category = ext_dict.get("event_category")
+            has_amount = 0 if ext_dict.get("contract_amount_original") is not None else 1
+            tier = 2 if category and category != "other" else (3 if has_amount == 0 else 4)
+            priority = (tier, has_amount, raw.disclosure_id)
+        candidates.append((priority, raw, ext_dict))
+
+    candidates.sort(key=lambda item: item[0])
+    rows: list[dict[str, Any]] = []
+    for _, raw, ext_dict in candidates[:max_cases]:
         fields = _EVAL_FIELDS_BY_TYPE[raw.disclosure_type]
         rows.append(
             {

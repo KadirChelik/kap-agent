@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import TypeVar
 
+import httpx
 import pytest
 from fastapi.testclient import TestClient
 from pydantic import BaseModel
@@ -16,10 +17,12 @@ from app.api.quota_guard import (
 )
 from app.config import get_settings
 from app.db.seed_loader import load_dataset_into_db
-from app.llm.base import LLMProvider
+from app.llm.base import LLMProvider, LLMProviderError
+from app.llm.gemini import FallbackChainProvider, OpenAICompatibleProvider
 from app.main import create_app
 from app.mcp.server import handle_mcp_request
 from app.schemas.agent import AgentTurnDecision
+from app.schemas.dividend import DividendExtraction
 
 TModel = TypeVar("TModel", bound=BaseModel)
 
@@ -166,3 +169,67 @@ def test_mcp_server_initialize_tools_and_readonly_safety(tmp_path: Path) -> None
     assert sql_blocked is not None
     assert sql_blocked["result"]["isError"] is True
     assert "SQLGuardError" in sql_blocked["result"]["content"][0]["text"]
+
+
+def test_fallback_chain_fails_over_on_quota_error() -> None:
+    class FailingPrimaryProvider(LLMProvider):
+        model_name = "gemini-primary-exhausted"
+        is_offline_fallback = False
+
+        def generate_structured(self, *, system_prompt: str, user_prompt: str, schema_cls: type[TModel]) -> TModel:
+            raise LLMProviderError("HTTP 429 quota exceeded")
+
+    def groq_handler(request: httpx.Request) -> httpx.Response:
+        assert request.headers["authorization"] == "Bearer test-groq-key"
+        return httpx.Response(
+            200,
+            json={
+                "choices": [
+                    {
+                        "message": {
+                            "content": (
+                                '{"decision_status": "approved", "fiscal_year": 2025, '
+                                '"gross_cash_per_share_try": 5.0, "net_cash_per_share_try": 4.25, '
+                                '"payment_type": "single", "evidence_quote": "Net 4.25 TL temettü."}'
+                            )
+                        }
+                    }
+                ]
+            },
+        )
+
+    transport = httpx.MockTransport(groq_handler)
+    with httpx.Client(transport=transport) as client:
+        groq = OpenAICompatibleProvider(
+            api_key="test-groq-key",
+            model_name="openai/gpt-oss-120b",
+            endpoint_url="https://api.groq.com/openai/v1/chat/completions",
+            provider_label="groq",
+            client=client,
+        )
+        chain = FallbackChainProvider([FailingPrimaryProvider(), groq])
+        res = chain.generate_structured(
+            system_prompt="Extract",
+            user_prompt="Test",
+            schema_cls=DividendExtraction,
+        )
+        assert isinstance(res, DividendExtraction)
+        assert res.net_cash_per_share_try == 4.25
+        assert chain.last_used_model == "groq:openai/gpt-oss-120b"
+
+
+def test_global_api_rate_limit_middleware(tmp_path: Path) -> None:
+    app = create_app(
+        db_path=tmp_path / "ratelimit.db",
+        admin_token="admin",
+        global_rate_limit_per_min=3,
+    )
+    client = TestClient(app)
+
+    for _ in range(3):
+        resp = client.get("/api/health")
+        assert resp.status_code == 200
+
+    limited = client.get("/api/health")
+    assert limited.status_code == 429
+    assert limited.headers.get("retry-after") == "60"

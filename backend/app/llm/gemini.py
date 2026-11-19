@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import re
+import threading
 import time
 from typing import Any, Optional, TypeVar
 
@@ -31,6 +32,46 @@ def _strip_code_fences(raw_text: str) -> str:
     return _CODE_FENCE_RE.sub("", raw_text.strip()).strip()
 
 
+def _decode_and_validate(raw_text: str, schema_cls: type[TModel]) -> TModel:
+    cleaned = _strip_code_fences(raw_text)
+    if not cleaned.startswith("{") and not cleaned.startswith("["):
+        match = re.search(r"(\{.*\})", cleaned, re.S)
+        if match:
+            cleaned = match.group(1)
+    decoded = json.loads(cleaned)
+    if isinstance(decoded, list) and decoded and isinstance(decoded[0], dict):
+        decoded = decoded[0]
+    return schema_cls.model_validate(decoded)
+
+
+def _parse_retry_after_seconds(resp: httpx.Response, default_sec: float) -> float:
+    raw = resp.headers.get("retry-after", "").strip()
+    if raw:
+        try:
+            return min(15.0, max(0.5, float(raw)))
+        except ValueError:
+            pass
+    return default_sec
+
+
+class _RateLimitPacer:
+    """Thread-safe minimum-interval pacer for outbound LLM API calls."""
+
+    def __init__(self) -> None:
+        self._lock = threading.Lock()
+        self._last_call_at = 0.0
+
+    def wait_turn(self, min_interval_sec: float) -> None:
+        if min_interval_sec <= 0:
+            return
+        with self._lock:
+            now = time.monotonic()
+            wait_for = (self._last_call_at + min_interval_sec) - now
+            if wait_for > 0:
+                time.sleep(wait_for)
+            self._last_call_at = time.monotonic()
+
+
 def _parse_tr_number(raw: str) -> Optional[float]:
     """Parse Turkish formatted number like '1.234.567,89' or '12,50' into float."""
     cleaned = raw.strip().replace("\u00a0", "").replace(" ", "")
@@ -49,7 +90,7 @@ def _parse_tr_number(raw: str) -> Optional[float]:
 
 
 class GeminiFlashProvider(LLMProvider):
-    """Calls Gemini Flash REST generateContent in strict JSON mode with exponential backoff."""
+    """Calls Gemini Flash REST generateContent in strict JSON mode with pacing & backoff."""
 
     is_offline_fallback: bool = False
 
@@ -60,6 +101,7 @@ class GeminiFlashProvider(LLMProvider):
         model_name: str = "gemini-3-flash-preview",
         timeout_sec: float = 30.0,
         max_retries: int = 3,
+        min_interval_sec: float = 0.0,
         client: Optional[httpx.Client] = None,
     ) -> None:
         if not api_key:
@@ -69,6 +111,8 @@ class GeminiFlashProvider(LLMProvider):
         self.last_used_model = model_name
         self.timeout_sec = timeout_sec
         self.max_retries = max_retries
+        self.min_interval_sec = min_interval_sec
+        self._pacer = _RateLimitPacer()
         self._client = client
 
     def generate_structured(
@@ -115,6 +159,7 @@ class GeminiFlashProvider(LLMProvider):
                 has_fallback = m_idx < len(models_to_try) - 1
                 for attempt in range(self.max_retries):
                     try:
+                        self._pacer.wait_turn(self.min_interval_sec)
                         resp = client.post(
                             endpoint,
                             headers={"x-goog-api-key": self.api_key},
@@ -126,6 +171,9 @@ class GeminiFlashProvider(LLMProvider):
                             )
                             break
                         if resp.status_code in (429, 500, 502, 503, 504):
+                            wait_hint = _parse_retry_after_seconds(resp, 0.8 * (2**attempt))
+                            if attempt < self.max_retries - 1 and resp.status_code == 429:
+                                time.sleep(wait_hint)
                             raise LLMProviderError(
                                 f"Transient Gemini HTTP {resp.status_code}: {resp.text[:200]}"
                             )
@@ -139,11 +187,7 @@ class GeminiFlashProvider(LLMProvider):
                         )
                         if not raw_text:
                             raise LLMProviderError("Empty text response from Gemini.")
-                        cleaned = _strip_code_fences(raw_text)
-                        decoded = json.loads(cleaned)
-                        if isinstance(decoded, list) and decoded and isinstance(decoded[0], dict):
-                            decoded = decoded[0]
-                        parsed = schema_cls.model_validate(decoded)
+                        parsed = _decode_and_validate(raw_text, schema_cls)
                         self.last_used_model = candidate_model
                         return parsed
                     except (httpx.HTTPError, LLMProviderError, ValidationError, ValueError, KeyError, IndexError) as exc:
@@ -219,6 +263,8 @@ class OfflineFallbackProvider(LLMProvider):
         if status == "no_dividend":
             gross = 0.0
             net = 0.0
+        elif net is not None and gross is not None and net > gross:
+            net = None
 
         payment_type = "none" if status == "no_dividend" else (
             "installments" if "taksit" in lower else "single"
@@ -529,9 +575,213 @@ class OfflineFallbackProvider(LLMProvider):
         )
 
 
+class OpenAICompatibleProvider(LLMProvider):
+    """Structured JSON adapter for Groq Cloud and OpenRouter free-tier endpoints."""
+
+    is_offline_fallback: bool = False
+
+    def __init__(
+        self,
+        *,
+        api_key: str,
+        model_name: str,
+        endpoint_url: str,
+        provider_label: str = "openai-compat",
+        timeout_sec: float = 35.0,
+        max_retries: int = 2,
+        min_interval_sec: float = 0.0,
+        client: Optional[httpx.Client] = None,
+    ) -> None:
+        if not api_key:
+            raise ValueError(f"{provider_label} requires a non-empty API key.")
+        self.api_key = api_key
+        self.model_name = model_name
+        self.last_used_model = f"{provider_label}:{model_name}"
+        self.endpoint_url = endpoint_url
+        self.provider_label = provider_label
+        self.timeout_sec = timeout_sec
+        self.max_retries = max_retries
+        self.min_interval_sec = min_interval_sec
+        self._pacer = _RateLimitPacer()
+        self._client = client
+
+    def generate_structured(
+        self,
+        *,
+        system_prompt: str,
+        user_prompt: str,
+        schema_cls: type[TModel],
+    ) -> TModel:
+        schema_json = json.dumps(schema_cls.model_json_schema(), ensure_ascii=False)
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json",
+        }
+        if self.provider_label == "openrouter":
+            headers["HTTP-Referer"] = "https://github.com/KadirChelik/kap-agent"
+            headers["X-Title"] = "KAP Agent"
+
+        last_err: Exception | None = None
+        use_json_format = True
+        client = self._client or httpx.Client(timeout=self.timeout_sec)
+        owns_client = self._client is None
+        try:
+            for attempt in range(self.max_retries):
+                payload: dict[str, Any] = {
+                    "model": self.model_name,
+                    "temperature": 0.0,
+                    "messages": [
+                        {
+                            "role": "system",
+                            "content": (
+                                f"{system_prompt}\n\n"
+                                f"Yanıtını SADECE aşağıdaki JSON Schema'ya uyan tek bir JSON objesi olarak döndür:\n"
+                                f"{schema_json}"
+                            ),
+                        },
+                        {"role": "user", "content": user_prompt},
+                    ],
+                }
+                if use_json_format:
+                    payload["response_format"] = {"type": "json_object"}
+                try:
+                    self._pacer.wait_turn(self.min_interval_sec)
+                    resp = client.post(self.endpoint_url, headers=headers, json=payload)
+                    if resp.status_code == 400 and use_json_format:
+                        use_json_format = False
+                        continue
+                    if resp.status_code in (429, 500, 502, 503, 504):
+                        wait_hint = _parse_retry_after_seconds(resp, 0.8 * (2**attempt))
+                        if attempt < self.max_retries - 1 and resp.status_code == 429:
+                            time.sleep(wait_hint)
+                        raise LLMProviderError(
+                            f"Transient {self.provider_label} HTTP {resp.status_code}: {resp.text[:180]}"
+                        )
+                    resp.raise_for_status()
+                    data = resp.json()
+                    raw_text = (
+                        data.get("choices", [{}])[0]
+                        .get("message", {})
+                        .get("content", "")
+                    )
+                    if not raw_text:
+                        raise LLMProviderError(f"Empty text response from {self.provider_label}.")
+                    parsed = _decode_and_validate(raw_text, schema_cls)
+                    self.last_used_model = f"{self.provider_label}:{self.model_name}"
+                    return parsed
+                except (httpx.HTTPError, LLMProviderError, ValidationError, ValueError, KeyError, IndexError) as exc:
+                    last_err = exc
+                    if attempt < self.max_retries - 1:
+                        time.sleep(0.8 * (2**attempt))
+                        continue
+                    break
+        finally:
+            if owns_client:
+                client.close()
+
+        raise LLMProviderError(
+            f"{self.provider_label} structured generation failed: {last_err}"
+        ) from last_err
+
+    def plan_agent_step(
+        self,
+        *,
+        system_prompt: str,
+        transcript: str,
+    ) -> AgentTurnDecision:
+        return self.generate_structured(
+            system_prompt=system_prompt,
+            user_prompt=transcript,
+            schema_cls=AgentTurnDecision,
+        )
+
+
+class FallbackChainProvider(LLMProvider):
+    """Try configured live providers in priority order (`Gemini -> Groq -> OpenRouter`)."""
+
+    is_offline_fallback: bool = False
+
+    def __init__(self, providers: list[LLMProvider]) -> None:
+        if not providers:
+            raise ValueError("FallbackChainProvider requires at least one live provider.")
+        self.providers = providers
+        self.model_name = providers[0].model_name
+        self.last_used_model = getattr(providers[0], "last_used_model", providers[0].model_name)
+
+    def generate_structured(
+        self,
+        *,
+        system_prompt: str,
+        user_prompt: str,
+        schema_cls: type[TModel],
+    ) -> TModel:
+        errors: list[str] = []
+        for p in self.providers:
+            try:
+                res = p.generate_structured(
+                    system_prompt=system_prompt,
+                    user_prompt=user_prompt,
+                    schema_cls=schema_cls,
+                )
+                self.last_used_model = getattr(p, "last_used_model", p.model_name)
+                return res
+            except (LLMProviderError, NotImplementedError) as exc:
+                errors.append(f"{p.model_name}: {exc}")
+                continue
+        raise LLMProviderError(f"All providers in chain failed: {' | '.join(errors)}")
+
+    def plan_agent_step(
+        self,
+        *,
+        system_prompt: str,
+        transcript: str,
+    ) -> AgentTurnDecision:
+        errors: list[str] = []
+        for p in self.providers:
+            try:
+                res = p.plan_agent_step(system_prompt=system_prompt, transcript=transcript)
+                self.last_used_model = getattr(p, "last_used_model", p.model_name)
+                return res
+            except (LLMProviderError, NotImplementedError) as exc:
+                errors.append(f"{p.model_name}: {exc}")
+                continue
+        raise LLMProviderError(f"All providers in chain failed: {' | '.join(errors)}")
+
+
 def get_extraction_provider(settings: Optional[Settings] = None) -> LLMProvider:
-    """Return GeminiFlashProvider when GEMINI_API_KEY is configured, else OfflineFallbackProvider."""
+    """Return configured live LLM chain (`Gemini -> Groq -> OpenRouter`), else OfflineFallbackProvider."""
     cfg = settings or get_settings()
+    chain: list[LLMProvider] = []
     if cfg.gemini_api_key:
-        return GeminiFlashProvider(api_key=cfg.gemini_api_key, model_name=cfg.gemini_model)
+        chain.append(
+            GeminiFlashProvider(
+                api_key=cfg.gemini_api_key,
+                model_name=cfg.gemini_model,
+                min_interval_sec=cfg.llm_min_interval_sec,
+            )
+        )
+    if cfg.groq_api_key:
+        chain.append(
+            OpenAICompatibleProvider(
+                api_key=cfg.groq_api_key,
+                model_name=cfg.groq_model,
+                endpoint_url="https://api.groq.com/openai/v1/chat/completions",
+                provider_label="groq",
+                min_interval_sec=cfg.llm_min_interval_sec,
+            )
+        )
+    if cfg.openrouter_api_key:
+        chain.append(
+            OpenAICompatibleProvider(
+                api_key=cfg.openrouter_api_key,
+                model_name=cfg.openrouter_model,
+                endpoint_url="https://openrouter.ai/api/v1/chat/completions",
+                provider_label="openrouter",
+                min_interval_sec=cfg.llm_min_interval_sec,
+            )
+        )
+    if len(chain) >= 2:
+        return FallbackChainProvider(chain)
+    if len(chain) == 1:
+        return chain[0]
     return OfflineFallbackProvider()

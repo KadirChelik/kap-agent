@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+import time
 from pathlib import Path
 from typing import Any, Optional
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from app.api.quota_guard import (
     DEMO_QUESTIONS,
@@ -26,9 +28,15 @@ def create_app(
     *,
     db_path: Optional[Path] = None,
     admin_token: Optional[str] = None,
+    global_rate_limit_per_min: Optional[int] = None,
 ) -> FastAPI:
     settings = get_settings()
     resolved_db = Path(db_path) if db_path else settings.db_path
+    resolved_global_rpm = (
+        global_rate_limit_per_min
+        if global_rate_limit_per_min is not None
+        else settings.api_global_rate_limit_per_min
+    )
 
     # Seed from tracked sample_seed on first boot so local demo works immediately
     if not resolved_db.exists() and settings.sample_raw_dir.exists():
@@ -47,6 +55,35 @@ def create_app(
     application.state.admin_token = admin_token or settings.admin_token
     application.state.llm_provider = None
     application.state.quota_manager = ChatQuotaManager()
+    application.state.global_api_hits = {}
+    application.state.global_rate_limit_per_min = resolved_global_rpm
+
+    @application.middleware("http")
+    async def global_api_rate_limit_middleware(request: Request, call_next):
+        if request.method == "OPTIONS" or not request.url.path.startswith("/api/"):
+            return await call_next(request)
+
+        fwd = request.headers.get("x-forwarded-for", "").split(",")[0].strip()
+        raw_ip = fwd or (request.client.host if request.client else "unknown")
+        ip_hash = hash_client_ip(raw_ip)
+
+        now = time.monotonic()
+        cutoff = now - 60.0
+        hits_store: dict[str, list[float]] = application.state.global_api_hits
+        recent = [t for t in hits_store.get(ip_hash, []) if t >= cutoff]
+        limit = int(getattr(application.state, "global_rate_limit_per_min", resolved_global_rpm))
+        if len(recent) >= limit:
+            hits_store[ip_hash] = recent
+            return JSONResponse(
+                status_code=429,
+                content={
+                    "detail": f"Global API hız sınırı aşıldı ({limit} istek/dakika). Lütfen biraz bekleyin."
+                },
+                headers={"Retry-After": "60"},
+            )
+        recent.append(now)
+        hits_store[ip_hash] = recent
+        return await call_next(request)
 
     application.add_middleware(
         CORSMiddleware,
@@ -99,14 +136,21 @@ def create_app(
             "pending_reviews_count": pending_reviews_count,
             "has_live_gemini": not is_offline,
             "is_offline_fallback": is_offline,
-            "provider_model": provider.model_name,
+            "provider_model": getattr(provider, "last_used_model", provider.model_name),
             "execution_mode": (
-                f"LIVE_GEMINI ({provider.model_name})"
+                f"LIVE_LLM ({provider.model_name})"
                 if not is_offline
-                else "OFFLINE/SAHTE (Gemini API anahtarı yok — Demo/Test Modu)"
+                else "OFFLINE/SAHTE (Canlı LLM API anahtarı yok — Demo/Test Modu)"
             ),
             "demo_questions": list(DEMO_QUESTIONS),
             "remaining_quota": remaining_quota,
+            "rate_limits": {
+                "api_per_min": int(getattr(application.state, "global_rate_limit_per_min", resolved_global_rpm)),
+                "chat_ip_min": quota_mgr.max_per_minute,
+                "chat_ip_day": quota_mgr.max_per_ip_day,
+                "chat_global_day": quota_mgr.max_global_day,
+                "reviews_ip_min": 5,
+            },
         }
 
     application.include_router(chat_router)

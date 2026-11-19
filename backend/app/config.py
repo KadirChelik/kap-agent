@@ -81,6 +81,12 @@ class Settings:
     extractions_cache_dir: Path
     gemini_api_key: str
     gemini_model: str
+    groq_api_key: str
+    groq_model: str
+    openrouter_api_key: str
+    openrouter_model: str
+    llm_min_interval_sec: float
+    api_global_rate_limit_per_min: int
     admin_token: str
     kap_user_agent: str
     sql_timeout_ms: int = 1500
@@ -90,6 +96,20 @@ class Settings:
 def _resolve_repo_path(raw_value: str) -> Path:
     candidate = Path(raw_value)
     return candidate if candidate.is_absolute() else (REPO_ROOT / candidate).resolve()
+
+
+def _parse_float_env(name: str, default: float) -> float:
+    try:
+        return max(0.0, float(os.getenv(name, str(default)).strip()))
+    except ValueError:
+        return default
+
+
+def _parse_int_env(name: str, default: int) -> int:
+    try:
+        return max(1, int(os.getenv(name, str(default)).strip()))
+    except ValueError:
+        return default
 
 
 def get_settings() -> Settings:
@@ -103,6 +123,12 @@ def get_settings() -> Settings:
         extractions_cache_dir=REPO_ROOT / "data" / "extractions",
         gemini_api_key=os.getenv("GEMINI_API_KEY", "").strip(),
         gemini_model=os.getenv("GEMINI_MODEL", "gemini-3-flash-preview").strip() or "gemini-3-flash-preview",
+        groq_api_key=os.getenv("GROQ_API_KEY", "").strip(),
+        groq_model=os.getenv("GROQ_MODEL", "openai/gpt-oss-120b").strip() or "openai/gpt-oss-120b",
+        openrouter_api_key=os.getenv("OPENROUTER_API_KEY", "").strip(),
+        openrouter_model=os.getenv("OPENROUTER_MODEL", "openrouter/free").strip() or "openrouter/free",
+        llm_min_interval_sec=_parse_float_env("LLM_MIN_INTERVAL_SEC", 1.2),
+        api_global_rate_limit_per_min=_parse_int_env("API_GLOBAL_RATE_LIMIT_PER_MIN", 60),
         admin_token=os.getenv("ADMIN_TOKEN", "dev-admin-token").strip() or "dev-admin-token",
         kap_user_agent=os.getenv(
             "KAP_USER_AGENT",
