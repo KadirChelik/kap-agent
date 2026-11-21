@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Flag, X } from 'lucide-react';
+import { apiUrl } from '../lib/api';
 
 interface FlagModalProps {
   disclosureId: string;
@@ -37,7 +38,7 @@ export function FlagModal({
     setSubmitting(true);
     setErrorMsg('');
     try {
-      const resp = await fetch('/api/reviews', {
+      const resp = await fetch(apiUrl('/api/reviews'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

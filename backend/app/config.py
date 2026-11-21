@@ -95,11 +95,25 @@ class Settings:
     kap_sync_limit_per_ticker: int = 5
     sql_timeout_ms: int = 1500
     sql_max_limit: int = 50
+    cors_origins: tuple[str, ...] = (
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://localhost:4173",
+    )
+    cors_origin_regex: str = r"https://.*\.vercel\.app"
 
 
 def _resolve_repo_path(raw_value: str) -> Path:
     candidate = Path(raw_value)
     return candidate if candidate.is_absolute() else (REPO_ROOT / candidate).resolve()
+
+
+def _parse_csv_env(name: str, default: tuple[str, ...]) -> tuple[str, ...]:
+    raw = os.getenv(name, "").strip()
+    if not raw:
+        return default
+    parts = tuple(item.strip().rstrip("/") for item in raw.split(",") if item.strip())
+    return parts or default
 
 
 def _parse_float_env(name: str, default: float) -> float:
@@ -143,4 +157,9 @@ def get_settings() -> Settings:
         kap_sync_interval_sec=max(60, _parse_int_env("KAP_SYNC_INTERVAL_SEC", 900)),
         kap_sync_lookback_days=_parse_int_env("KAP_SYNC_LOOKBACK_DAYS", 14),
         kap_sync_limit_per_ticker=_parse_int_env("KAP_SYNC_LIMIT_PER_TICKER", 5),
+        cors_origins=_parse_csv_env(
+            "CORS_ORIGINS",
+            ("http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:4173"),
+        ),
+        cors_origin_regex=os.getenv("CORS_ORIGIN_REGEX", r"https://.*\.vercel\.app").strip(),
     )

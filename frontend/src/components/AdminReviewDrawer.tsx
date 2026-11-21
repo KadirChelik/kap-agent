@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { Check, Lock, X } from 'lucide-react';
+import { apiUrl } from '../lib/api';
 import type { ReviewFlagItem } from '../types';
 
 interface AdminReviewDrawerProps {
@@ -19,7 +20,7 @@ export function AdminReviewDrawer({ onClose, onDataMutated }: AdminReviewDrawerP
     setLoading(true);
     setErrorMsg('');
     try {
-      const resp = await fetch('/api/admin/reviews', {
+      const resp = await fetch(apiUrl('/api/admin/reviews'), {
         headers: { 'X-Admin-Token': adminToken.trim() },
       });
       if (!resp.ok) {
@@ -39,7 +40,7 @@ export function AdminReviewDrawer({ onClose, onDataMutated }: AdminReviewDrawerP
   async function handleDecision(flag: ReviewFlagItem, action: 'approve' | 'reject') {
     setErrorMsg('');
     try {
-      const resp = await fetch(`/api/admin/reviews/${flag.flag_id}/decide`, {
+      const resp = await fetch(apiUrl(`/api/admin/reviews/${flag.flag_id}/decide`), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

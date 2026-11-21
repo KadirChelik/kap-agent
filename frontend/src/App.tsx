@@ -5,6 +5,7 @@ import { DataVisualizer } from './components/DataVisualizer';
 import { FlagModal } from './components/FlagModal';
 import { SourceDrawer } from './components/SourceDrawer';
 import { TracePanel } from './components/TracePanel';
+import { apiUrl } from './lib/api';
 import { consumeChatSse } from './lib/sse';
 import type {
   ChatMessage,
@@ -52,8 +53,8 @@ export default function App() {
   const loadHealthAndLowConf = useCallback(async () => {
     try {
       const [hResp, lResp] = await Promise.all([
-        fetch('/api/health'),
-        fetch('/api/disclosures?low_confidence_only=true&limit=10'),
+        fetch(apiUrl('/api/health')),
+        fetch(apiUrl('/api/disclosures?low_confidence_only=true&limit=10')),
       ]);
       if (hResp.ok) {
         setHealth((await hResp.json()) as HealthStatus);
@@ -79,7 +80,7 @@ export default function App() {
     if (syncing) return;
     setSyncing(true);
     try {
-      await fetch('/api/sync', { method: 'POST' });
+      await fetch(apiUrl('/api/sync'), { method: 'POST' });
       await loadHealthAndLowConf();
     } finally {
       setSyncing(false);
@@ -89,7 +90,7 @@ export default function App() {
   const openDisclosure = useCallback(async (disclosureId: string) => {
     setDrawerLoading(true);
     try {
-      const resp = await fetch(`/api/disclosures/${encodeURIComponent(disclosureId)}`);
+      const resp = await fetch(apiUrl(`/api/disclosures/${encodeURIComponent(disclosureId)}`));
       if (resp.ok) {
         setSelectedDisclosure((await resp.json()) as DisclosureDetail);
       }
@@ -122,7 +123,7 @@ export default function App() {
     setStreaming(true);
 
     try {
-      const resp = await fetch('/api/chat', {
+      const resp = await fetch(apiUrl('/api/chat'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ question: trimmed, stream: true }),
