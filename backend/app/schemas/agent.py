@@ -40,6 +40,20 @@ class RunSqlInput(BaseModel):
     sql: str = Field(..., min_length=6, max_length=2000)
     purpose: str = Field(default="Analitik sorgu", max_length=200)
 
+    @model_validator(mode="before")
+    @classmethod
+    def _normalize_sql_alias(cls, data: Any) -> Any:
+        if not isinstance(data, dict):
+            return data
+        copied = dict(data)
+        if not str(copied.get("sql") or "").strip():
+            for alias in ("query", "sql_query", "statement"):
+                val = copied.get(alias)
+                if isinstance(val, str) and val.strip():
+                    copied["sql"] = copied.pop(alias)
+                    break
+        return copied
+
 
 class ChartSpec(BaseModel):
     """Declarative chart hint rendered alongside tabular query outputs."""

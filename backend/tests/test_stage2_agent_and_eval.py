@@ -20,7 +20,7 @@ from app.agent.sql_guard import SQLGuardError, validate_and_rewrite_sql
 from app.config import REPO_ROOT, get_settings
 from app.db.seed_loader import load_dataset_into_db
 from app.llm.base import LLMProvider
-from app.schemas.agent import AgentTurnDecision
+from app.schemas.agent import AgentTurnDecision, RunSqlInput
 
 TModel = TypeVar("TModel", bound=BaseModel)
 
@@ -296,3 +296,49 @@ def test_agent_eval_runner_unverified_and_verified_modes(seeded_db: Path, tmp_pa
     assert verified_report["citation_precision_pct"] == 100.0
     assert verified_report["citation_recall_pct"] == 100.0
     assert verified_report["answer_contains_match_pct"] == 100.0
+
+
+def test_run_sql_accepts_query_alias_without_burning_retries(seeded_db: Path) -> None:
+    parsed = RunSqlInput.model_validate(
+        {"query": "SELECT disclosure_id, ticker FROM disclosures LIMIT 1"}
+    )
+    assert parsed.sql == "SELECT disclosure_id, ticker FROM disclosures LIMIT 1"
+
+    class AliasSqlMockProvider(LLMProvider):
+        model_name = "mock-alias-llm"
+        is_offline_fallback = False
+
+        def __init__(self) -> None:
+            self.step = 0
+
+        def generate_structured(
+            self, *, system_prompt: str, user_prompt: str, schema_cls: type[TModel]
+        ) -> TModel:
+            raise NotImplementedError
+
+        def plan_agent_step(self, *, system_prompt: str, transcript: str) -> AgentTurnDecision:
+            self.step += 1
+            if self.step == 1:
+                return AgentTurnDecision(
+                    action="call_tool",
+                    thought="LLM emits query alias instead of sql.",
+                    tool_name="run_sql",
+                    tool_args={
+                        "query": "SELECT disclosure_id, ticker, net_cash_per_share_try FROM dividend_events WHERE ticker='FROTO' LIMIT 1"
+                    },
+                )
+            return AgentTurnDecision(
+                action="final_answer",
+                thought="Return cited answer.",
+                answer_text="FROTO hisse başına 39.15 TL temettü açıkladı [kap:1401002].",
+            )
+
+    res = run_kap_agent(
+        "FROTO temettüsü nedir?",
+        db_path=seeded_db,
+        provider=AliasSqlMockProvider(),
+    )
+    assert res.sql_attempts == 1
+    assert res.sql_retries == 0
+    assert res.first_try_sql_success is True
+    assert [c.disclosure_id for c in res.citations] == ["1401002"]
